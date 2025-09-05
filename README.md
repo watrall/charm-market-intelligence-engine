@@ -1,4 +1,4 @@
-# CHARM — Streamlined Market Intelligence Engine (CRM/Heritage)
+# CHARM — Streamlined Market Intelligence Engine
 
 This is a clean, runnable reference implementation for automated market analysis in the cultural resource & heritage management space (designed originally to be hosted and run on a local Synology NAS).
 
