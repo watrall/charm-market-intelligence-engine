@@ -226,7 +226,7 @@ Import `n8n/charm_workflow_mattermost.json` for a version of the workflow that *
 
 
 ## LLM options (self-hosted vs. cloud)
-This repo supports two classes of LLM backends:
+This pipeline supports two classes of LLM backends:
 
 **Cloud (commercial): OpenAI**  
 - Set `LLM_PROVIDER=openai` and `OPENAI_API_KEY=ENTER_OPENAI_API_KEY_HERE`  
