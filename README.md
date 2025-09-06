@@ -44,7 +44,7 @@ python scripts/pipeline.py       # run the end-to-end pipeline
 - **Python pipeline**: scraping → cleaning/dedupe → report parsing → NLP → sentiment → geocoding → analysis → insights → persistence.
 - **Storage**: CSVs for the dashboard + **SQLite** for durable querying; **Google Sheets** for sharing raw rows.
 - **Dashboard**: Streamlit with **Plotly** charts and a **Folium** map (heatmap + clustered markers).
-- **LLM (optional)**: Brief insights; off by default.
+- **LLM (optional)**: Brief insights; on by default (but can be turned off by user).
 
 ## n8n Scheduling (Synology)
 Import `n8n/charm_workflow.json` and point Execute Command to:
