@@ -1,29 +1,204 @@
-skill,category,level,recommended_program_types
-ArcGIS,GIS,intermediate,"certificate,microlearning,undergrad"
-QGIS,GIS,intermediate,"certificate,microlearning,undergrad"
-Section 106,regulatory,intermediate,"certificate,workshop,undergrad"
-NEPA,regulatory,intermediate,"certificate,workshop,undergrad,post-bacc"
-NHPA,regulatory,intermediate,"certificate,workshop,undergrad"
-NAGPRA,regulatory,advanced,"workshop,post-bacc,grad"
-Survey (Phase I),field,beginner,"undergrad,workshop,microlearning"
-Testing (Phase II),field,intermediate,"undergrad,certificate"
-Data Recovery (Phase III),field,advanced,"grad,post-bacc,certificate"
-SHPO,regulatory,intermediate,"workshop,certificate"
-Photogrammetry (3D),digital,intermediate,"certificate,workshop,undergrad"
-LiDAR,digital,intermediate,"certificate,workshop,undergrad"
-UAS/Drone,digital,intermediate,"certificate,workshop,undergrad"
-Collections Management,museum,intermediate,"certificate,post-bacc,workshop"
-Curation,museum,intermediate,"certificate,post-bacc,workshop"
-Faunal Analysis,laboratory,advanced,"grad,post-bacc"
-Ceramic Analysis,laboratory,advanced,"grad,post-bacc"
-Lithic Analysis,laboratory,advanced,"grad,post-bacc"
-AutoCAD,design,intermediate,"certificate,workshop"
-Project Management,management,intermediate,"certificate,post-bacc,workshop"
-Proposal Writing,business,intermediate,"workshop,certificate"
-Report Writing,business,intermediate,"workshop,certificate,undergrad"
-OSHA 10,compliance,beginner,"microlearning,workshop,certificate"
-BIM/Revit,design,intermediate,"certificate,workshop"
-GIS Programming (Python),GIS,advanced,"grad,post-bacc"
-Cultural Landscape Assessment,planning,advanced,"grad,post-bacc"
-Public Engagement,communication,intermediate,"workshop,certificate"
-Heritage Policy,policy,advanced,"grad,post-bacc"
+alias,normalized_skill,category
+Osteology,Bioarchaeology/Osteology,Analysis & Lab
+Ceramic Analysis,Ceramic Analysis,Analysis & Lab
+Conservation Planning,Collections Conservation Planning,Analysis & Lab
+Dendrochronology,Dendrochronology,Analysis & Lab
+Geoarchaeology,Geoarchaeology,Analysis & Lab
+Lithic Analysis,Lithic Analysis,Analysis & Lab
+Obsidian Sourcing,Obsidian Sourcing/XRF,Analysis & Lab
+Paleoethnobotany,Paleoethnobotany/Archaeobotany,Analysis & Lab
+Radiocarbon Sampling,Radiocarbon Sampling/Interpretation,Analysis & Lab
+Residue Analysis,Residue/Use-Wear Analysis,Analysis & Lab
+Micromorphology,Soil Micromorphology,Analysis & Lab
+Faunal Analysis,Zooarchaeology (Faunal Analysis),Analysis & Lab
+Architectural History,Architectural History,Built Environment
+Historic Structures Report,Historic Structures Report (HSR),Built Environment
+Eligibility/Integrity Assessment,NRHP Integrity Assessment,Built Environment
+Bridge/Transportation History,Transportation Resource Evaluation,Built Environment
+Budget Stewardship,Budget & Cost Control (Preservation),Business & Program
+Fundraising (Heritage),Fundraising & Sponsorship (Heritage),Business & Program
+Grant Writing (Heritage),Grant Writing for Heritage Programs,Business & Program
+Heritage Economics,Heritage Economics & Valuation,Business & Program
+Governance Structures,Heritage Governance Models,Business & Program
+Policy Analysis (Heritage),Heritage Policy Analysis,Business & Program
+Program Evaluation,Program Evaluation (KPIs/Outcomes),Business & Program
+Stakeholder Mapping,Stakeholder Mapping,Business & Program
+HRI/CHRIS Records,State Historic Record Systems (e.g.,CHRIS)
+Accession Policy,Accession Policy & Procedures,Collections & Curation
+Accessioning,Accessioning & Cataloging,Collections & Curation
+Environmental Monitoring,Collections Environmental Monitoring,Collections & Curation
+Loan Management,Collections Loan Management,Collections & Curation
+Collections Policy,Collections Management Policy,Collections & Curation
+Metadata Standards,Collections Metadata (Dublin Core/PREMIS),Collections & Curation
+Curation Agreements,Curation Agreements,Collections & Curation
+Deaccessioning,Deaccessioning Procedures,Collections & Curation
+Digital Preservation,Digital Preservation (OAIS/BagIt),Collections & Curation
+Integrated Pest Management,Integrated Pest Management (IPM),Collections & Curation
+PastPerfect,PastPerfect CMS,Collections & Curation
+Rehousing,Preventive Conservation & Rehousing,Collections & Curation
+Repatriation Policy,Repatriation Policy & Procedures,Collections & Curation
+Repository Standards,Repository Standards & Agreements,Collections & Curation
+TMS,The Museum System (TMS),Collections & Curation
+Community Engagement,Community Outreach & Interpretation,Community & Consultation
+Ethnographic Methods,Ethnographic Research Methods,Community & Consultation
+Oral History,Oral History Methods,Community & Consultation
+Public Interpretation,Public Interpretation & Education,Community & Consultation
+Tribal Consultation,Tribal Consultation & Engagement,Community & Consultation
+Archaeological Monitoring,Archaeological Monitoring,Compliance Implementation
+Stop-Work Protocol,Chance Find/Stop-Work Protocols,Compliance Implementation
+Compliance Tracking,Compliance Tracking Systems,Compliance Implementation
+Construction Monitoring,Construction Compliance Monitoring,Compliance Implementation
+Contract Deliverables,Contract Deliverables Management,Compliance Implementation
+Mitigation Reporting,Mitigation Reporting & Closeout,Compliance Implementation
+Treatment Proposals,Conservation Treatment Proposals,Conservation & Treatment
+Stabilization,Emergency Stabilization (Historic Fabric),Conservation & Treatment
+Materials Conservation,Historic Materials Conservation,Conservation & Treatment
+Historic Paint Analysis,Historic Paint Analysis,Conservation & Treatment
+Masonry Conservation,Masonry Conservation,Conservation & Treatment
+Metal Conservation,Metal Conservation,Conservation & Treatment
+Mortar Analysis,Mortar Analysis & Repointing,Conservation & Treatment
+Plaster Conservation,Plaster Conservation,Conservation & Treatment
+Preventive Conservation,Preventive Conservation,Conservation & Treatment
+Secretary Standards Treatment,SOI Treatment Standards (Preserve/Rehab/Restore/Reconstruct),Conservation & Treatment
+Stone Conservation,Stone Conservation,Conservation & Treatment
+Wood Conservation,Wood Conservation,Conservation & Treatment
+ArcGIS Pro,ArcGIS,Digital & Geospatial
+ArcGIS Online,ArcGIS Online,Digital & Geospatial
+Cost Distance,Cost Distance / Least-Cost Path,Digital & Geospatial
+Digitization & GeoRef,Digitization & Georeferencing,Digital & Geospatial
+Resistivity,Electrical Resistivity,Digital & Geospatial
+Collector,Esri Collector,Digital & Geospatial
+Field Maps,Esri Field Maps,Digital & Geospatial
+StoryMaps,Esri StoryMaps,Digital & Geospatial
+Survey123,Esri Survey123,Digital & Geospatial
+Geodatabases,File/Enterprise Geodatabase,Digital & Geospatial
+FME,FME (Feature Manipulation Engine),Digital & Geospatial
+GDAL,GDAL/OGR,Digital & Geospatial
+GPR,Ground Penetrating Radar,Digital & Geospatial
+LiDAR Processing,LiDAR Processing,Digital & Geospatial
+Magnetometry,Magnetometry Survey,Digital & Geospatial
+PostGIS,PostGIS,Digital & Geospatial
+QGIS,QGIS,Digital & Geospatial
+Remote Sensing Classification,Remote Sensing Classification,Digital & Geospatial
+Photogrammetry,Structure-from-Motion Photogrammetry,Digital & Geospatial
+3D Scanning,Terrestrial Laser Scanning (TLS),Digital & Geospatial
+UAV Photogrammetry,UAV Photogrammetry,Digital & Geospatial
+Viewshed Analysis,Viewshed Analysis,Digital & Geospatial
+Arches Platform,Arches Heritage Inventory Platform,Digital Heritage
+CIDOC CRM,CIDOC CRM (Heritage Semantics),Digital Heritage
+Data Management Plan,Data Management Plan (FAIR),Digital Heritage
+Digital Twins (Heritage),Digital Twins for Heritage Sites,Digital Heritage
+Persistent Identifiers,DOIs/PIDs for Heritage Assets,Digital Heritage
+HBIM,HBIM (Heritage Building Information Modeling),Digital Heritage
+MIDAS Heritage,MIDAS Heritage Standard,Digital Heritage
+Mukurtu CMS,Mukurtu (Community Protocol CMS),Digital Heritage
+Omeka S,Omeka S (Digital Exhibits),Digital Heritage
+Records Submission,State Site Form & Records Submission,Digital Heritage
+Built Environment Survey,Built Environment Survey,Field Methods
+Cultural Landscape Inventory,Cultural Landscape Inventory,Field Methods
+UAV Mapping,Drone (UAV) Mapping,Field Methods
+FAA Part 107,FAA Part 107 Remote Pilot,Field Methods
+Historic District Survey,Historic District Survey,Field Methods
+Pedestrian Survey,Pedestrian Survey,Field Methods
+Phase I Survey,Phase I Archaeological Survey,Field Methods
+Phase II Testing,Phase II Evaluation/Testing,Field Methods
+Phase III Data Recovery,Phase III Data Recovery,Field Methods
+Condition Assessment,Resource Condition Assessment,Field Methods
+RTK GPS,RTK GNSS Survey,Field Methods
+Shovel Test Pits,Shovel Test Pits (STPs),Field Methods
+Site Recording,Site Recording & Forms,Field Methods
+Total Station,Total Station Survey,Field Methods
+Underwater Survey,Underwater/Maritime Survey,Field Methods
+Adaptive Reuse Planning,Adaptive Reuse Planning,Planning & Policy
+Data Recovery Plan,Archaeological Data Recovery Plan,Planning & Policy
+Co-Management Agreements,Co-Management Agreements,Planning & Policy
+Conservation Management Plan,Conservation Management Plan,Planning & Policy
+Conservation Plan,Conservation Plan,Planning & Policy
+Cultural Landscape Management,Cultural Landscape Management,Planning & Policy
+Cultural Landscape Report,Cultural Landscape Report (CLR),Planning & Policy
+Design Review,Design Review for Historic Properties,Planning & Policy
+Heritage Management Plan,Heritage Management Plan,Planning & Policy
+Heritage Impact Assessment,HIA (Heritage Impact Assessment),Planning & Policy
+Historic District Guidelines,Historic District Guidelines,Planning & Policy
+Historic Preservation Plan,Historic Preservation Plan,Planning & Policy
+Historic Tax Credits,Historic Tax Credit Applications,Planning & Policy
+Intangible Cultural Heritage,Intangible Cultural Heritage Safeguarding,Planning & Policy
+Preservation Ordinance,Local Preservation Ordinances,Planning & Policy
+Monitoring Plan,Long-Term Resource Monitoring Plan,Planning & Policy
+Programmatic Mitigation,Mitigation Planning & Implementation,Planning & Policy
+Site Management Plan,Site Management Plan,Planning & Policy
+World Heritage Nomination,UNESCO World Heritage Nomination Process,Planning & Policy
+Viewshed & Setting,Viewshed and Setting Analysis,Planning & Policy
+World Heritage Management,World Heritage Site Management,Planning & Policy
+Free Prior Informed Consent,FPIC (Free,Prior and Informed Consent)
+Burra Charter,Burra Charter Principles,Professional Practice
+Cultural Sensitivity Training,Cultural Sensitivity Training,Professional Practice
+DEIA in Heritage,DEIA Practices in Heritage Work,Professional Practice
+Ethical Guidelines (ICOMOS),ICOMOS Ethical Guidelines,Professional Practice
+NPS Bulletins,NPS Preservation Briefs & Bulletins,Professional Practice
+Venice Charter,Venice Charter Principles,Professional Practice
+Budgeting & Scheduling,Budgeting & Scheduling,Project & Business
+Client Management,Client/Stakeholder Management,Project & Business
+Crew Chief,Crew Chief / Field Director,Project & Business
+MS Project,Microsoft Project,Project & Business
+Primavera P6,Primavera P6,Project & Business
+Principal Investigator,Principal Investigator (PI),Project & Business
+Project Management,Project Management,Project & Business
+Proposal Writing,Proposal/Scope Writing (RFP/RFQ),Project & Business
+QA/QC,Quality Assurance / Quality Control,Project & Business
+Risk Management,Risk Management,Project & Business
+Technical Editing,Technical Editing,Project & Business
+ARPA,Archaeological Resources Protection Act,Regulatory & Compliance
+BLM Permit,BLM Archaeology Permit,Regulatory & Compliance
+CEQA,California Environmental Quality Act,Regulatory & Compliance
+36 CFR 79,Collections Curation (36 CFR 79),Regulatory & Compliance
+HABS/HAER/HALS,HABS/HAER/HALS Documentation,Regulatory & Compliance
+Memorandum of Agreement,MOA (Section 106 Resolution),Regulatory & Compliance
+NHPA,National Historic Preservation Act,Regulatory & Compliance
+NAGPRA,Native American Graves Protection and Repatriation Act,Regulatory & Compliance
+NEPA Class of Action,NEPA Class of Action,Regulatory & Compliance
+Determination of Eligibility,NRHP Determination of Eligibility,Regulatory & Compliance
+NRHP Criteria A-D,NRHP Evaluation Criteria,Regulatory & Compliance
+Programmatic Agreement,Programmatic Agreements (PAs),Regulatory & Compliance
+Finding of Effect,Section 106 Finding of Effect,Regulatory & Compliance
+36 CFR 800,Section 106 Regulations (36 CFR 800),Regulatory & Compliance
+Section 110,Section 110 (NHPA),Regulatory & Compliance
+Section 4(f),Section 4(f) DOT Act,Regulatory & Compliance
+FHWA Section 4(f) Evaluation,Section 4(f) Evaluation,Regulatory & Compliance
+SHPO Coordination,SHPO Consultation,Regulatory & Compliance
+Secretary of the Interior Qualifications,SOI Professional Qualifications,Regulatory & Compliance
+Secretary of the Interior's Standards,SOI Professional Standards,Regulatory & Compliance
+SEPA,State Environmental Policy Act,Regulatory & Compliance
+THPO Coordination,THPO Consultation,Regulatory & Compliance
+Climate Adaptation,Climate Adaptation for Heritage,Risk & Resilience
+Disaster Planning,Disaster Risk Reduction & Response,Risk & Resilience
+Emergency Preparedness,Emergency Preparedness (Collections/Sites),Risk & Resilience
+Risk Assessment,Heritage Risk Assessment,Risk & Resilience
+Post-Disaster Assessment,Post-Disaster Damage Assessment,Risk & Resilience
+Security Planning,Security Planning for Heritage Assets,Risk & Resilience
+CPR/First Aid,CPR/First Aid,Safety & Certifications
+MSHA,MSHA Surface Miner,Safety & Certifications
+Off-Road/ATV,Off-Road/ATV Operation,Safety & Certifications
+HAZWOPER 40,OSHA HAZWOPER 40-hour,Safety & Certifications
+Diving Certification,Scientific Diving (AAUS),Safety & Certifications
+Wilderness First Aid,Wilderness First Aid,Safety & Certifications
+Illustrator,Adobe Illustrator,Tools & Programming
+InDesign,Adobe InDesign (Reports),Tools & Programming
+Photoshop,Adobe Photoshop,Tools & Programming
+AutoCAD,AutoCAD (Drafting),Tools & Programming
+Data Visualization,Data Visualization,Tools & Programming
+FileMaker,FileMaker Pro,Tools & Programming
+PostgreSQL,PostgreSQL,Tools & Programming
+Python,Python,Tools & Programming
+R Programming,R,Tools & Programming
+Revit,Revit (BIM for Heritage),Tools & Programming
+SQL,SQL,Tools & Programming
+Accessibility Planning,Accessibility & ADA in Historic Settings,Visitor Experience
+Community Co-Design,Community Co-Design for Interpretation,Visitor Experience
+Exhibit Planning,Exhibit & Gallery Planning,Visitor Experience
+Heritage Tourism,Heritage Tourism Strategy,Visitor Experience
+Interpretive Planning,Interpretive Planning,Visitor Experience
+Interpretive Signage,Interpretive Signage Development,Visitor Experience
+Public Programs,Public Programs & Events,Visitor Experience
+Visitor Use Management,Visitor Use Management,Visitor Experience
+Wayfinding,Wayfinding in Heritage Contexts,Visitor Experience
