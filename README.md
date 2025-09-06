@@ -4,7 +4,7 @@ This is a clean, runnable reference implementation for automated market analysis
 
 CHARM = Cultural Heritage & Archaeologcial Resource Management
 
-**Outcomes:** scrape jobs → clean/dedupe → parse PDFs → spaCy NER + skills → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
+**Outcomes:** scrape job postings (AAA & ACRA) → clean/dedupe → parse PDFs → spaCy NER + skills → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
 
 ## Quick Start
 ```bash
