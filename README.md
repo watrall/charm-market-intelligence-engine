@@ -1,6 +1,6 @@
-# CHARM — Streamlined Market Intelligence Engine (CRM/Heritage)
+# CHARM — Streamlined Market Intelligence Engine
 
-This is a clean, runnable reference implementation for automated market analysis in the cultural resource & heritage management space.
+This is a clean, runnable reference implementation for automated market analysis in the cultural resource & heritage management space (designed originally to be hosted and run on a local Synology NAS).
 
 **Outcomes:** scrape jobs → clean/dedupe → parse PDFs → spaCy NER + skills → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
 
@@ -226,7 +226,7 @@ Import `n8n/charm_workflow_mattermost.json` for a version of the workflow that *
 
 
 ## LLM options (self-hosted vs. cloud)
-This repo supports two classes of LLM backends:
+This pipeline supports two classes of LLM backends:
 
 **Cloud (commercial): OpenAI**  
 - Set `LLM_PROVIDER=openai` and `OPENAI_API_KEY=ENTER_OPENAI_API_KEY_HERE`  
