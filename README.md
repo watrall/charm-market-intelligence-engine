@@ -2,7 +2,9 @@
 
 This is a clean, runnable reference implementation for automated market analysis in the cultural resource & heritage management space (designed originally to be hosted and run on a local Synology NAS).
 
-**Outcomes:** scrape jobs → clean/dedupe → parse PDFs → spaCy NER + skills → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
+CHARM = Cultural Heritage & Archaeologcial Resource Management
+
+**Outcomes:** scrape job postings (AAA & ACRA) → clean/dedupe → parse PDFs → spaCy NER + skills → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
 
 ## Quick Start
 ```bash
@@ -42,7 +44,7 @@ python scripts/pipeline.py       # run the end-to-end pipeline
 - **Python pipeline**: scraping → cleaning/dedupe → report parsing → NLP → sentiment → geocoding → analysis → insights → persistence.
 - **Storage**: CSVs for the dashboard + **SQLite** for durable querying; **Google Sheets** for sharing raw rows.
 - **Dashboard**: Streamlit with **Plotly** charts and a **Folium** map (heatmap + clustered markers).
-- **LLM (optional)**: Brief insights; off by default.
+- **LLM (optional)**: Brief insights; on by default (but can be turned off by user).
 
 ## n8n Scheduling (Synology)
 Import `n8n/charm_workflow.json` and point Execute Command to:
