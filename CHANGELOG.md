@@ -1,8 +1,16 @@
 # Changelog
 
-## 1.0.0 — 2025-09-05
+## 2025-09-08 — Geospatial map updates
+- Added Folium map modes to visualize **skills × seniority × job type**:
+  - **Points (clustered):** color by seniority, icon by job type, popup with title/org/skills and a link.
+  - **Choropleth (by state):** shows posting intensity; works with or without a skill filter. Uses a local US states GeoJSON if present.
+  - **Heatmap:** quick view for dense areas.
+- Sidebar filters for date range, skills, seniority, job type, and map mode.
+- Kept the UI minimal and readable. If the GeoJSON file isn’t available, the choropleth option is skipped with a clear message.
 
-### What’s in this release
+
+## 2025-09-05
+
 - A complete, working pipeline for the CHARM project (Cultural Heritage & Archaeological Resource Management).
 - Scrapes job postings from ACRA and the AAA Career Center, follows pagination, and fetches full descriptions.
 - Lets you drop industry reports (PDFs) into `/reports/`; the pipeline parses the text and runs the same entity/skills pass on it.
