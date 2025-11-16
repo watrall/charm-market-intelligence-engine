@@ -23,6 +23,8 @@ python scripts/pipeline.py
 streamlit run dashboard/app.py
 ```
 
+> **Cost-safe dry run:** `USE_LLM` and `USE_SHEETS` default to `false` in `.env.example` so you can run the full pipeline locally without triggering OpenAI tokens or Google Sheets API calls. Flip them to `true` only after you are ready to authenticate those paid services.
+
 ## Environment placeholders
 The sample `.env` uses **explicit placeholders** anywhere a key/ID/secret is needed. Replace these with real values:
 
@@ -199,7 +201,7 @@ The pipeline can post a completion message to a Mattermost channel using an **in
 - A link to the dashboard
 - An optional short snippet from `insights.md` (“LLM Brief” if present)
 
-**Where to customize:** `scripts/notify_mattermost.py` → `build_summary()`
+**Where to customize:** open `n8n/charm_workflow_mattermost.json`, find the `Notification Config` node, and edit the embedded JavaScript to change the summary payload.
 
 
 
@@ -289,9 +291,10 @@ This repository is organized so a reviewer can read it top‑down and understand
 - `scripts/pandas_examples.py` — Extra recipes for ad‑hoc analysis; helpful for quick CSV exports during exploration.
 
 ### Storage / outputs
-- `data/charm.db` — SQLite database created on first run (durable auditing and ad‑hoc queries).
+- `data/charm.db` — SQLite database created on first run (durable auditing and ad-hoc queries).
 - `data/processed/` — CSV and artifacts used by the dashboard: `jobs.csv`, `reports.csv`, `analysis.json`, `insights.md`, and `wordcloud.png`.
-- `docs/sql_examples.sql` — A few ready‑to‑use SQL queries against `charm.db` (e.g., salary by skill, recent Section 106/NEPA postings).
+- `docs/sql_examples.sql` — A few ready-to-use SQL queries against `charm.db` (e.g., salary by skill, recent Section 106/NEPA postings).
+- `docs/data_contract.md` — Field-level documentation for each exported file so downstream teams know how to consume them.
 
 ### Dashboard (Streamlit + Folium + Plotly)
 - `dashboard/app.py` — Single‑page, minimalist UI:
@@ -319,3 +322,11 @@ This repository is organized so a reviewer can read it top‑down and understand
 5. The **n8n Mattermost** workflow (optional) reads the latest outputs, composes a short message (totals, top skills, alerts), posts to your channel, and snapshots the analysis for the next run.
 
 Everything is idempotent: duplicates are filtered, pagination is capped, geocoding is cached, and runs can be scheduled safely.
+
+## Cost & usage planning
+- **LLM calls (optional):** The default insight prompt is ~450 output tokens. With `LLM_MAX_TOKENS=1200`, each run on `gpt-4o-mini` (currently ~$0.60 per 1K output tokens) costs roughly $0.30–$0.70 depending on completion length. Lower that ceiling or switch `USE_LLM=false` for cost-free runs. If you run hourly, document how many runs you expect per month and multiply by that per-call estimate to create a budget window.
+- **Google Sheets sync (optional):** Setting `USE_SHEETS=true` turns on both Sheets and Drive APIs. They are metered after the free tier, and every run makes a few dozen append/read calls. Leave it `false` until you create a GCP project, confirm quotas, and budget for increased throughput (e.g., batch jobs nightly instead of per-scrape).
+- **Geocoding:** The built-in Nominatim client is free but rate-limited to 1 request/sec; heavy usage may require hosting your own instance. Because geocoding is cached in `data/geocache.csv`, reruns stay cost-free unless you clear the cache.
+- **Storage/dashboards:** Streamlit + SQLite incur no extra spend—everything runs locally. When deploying to cloud infrastructure, include VM/storage costs in your overall estimate.
+
+Document these toggles in your runbook so reviewers understand how to perform a zero-cost demo vs. a production run with LLM + Sheets enabled.

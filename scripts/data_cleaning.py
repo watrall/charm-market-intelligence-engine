@@ -22,11 +22,20 @@ def _hash_row(title, company, description):
 
 def clean_and_dedupe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    for col in ["title","company","location","date_posted","job_url","description"]:
+    for col in ["title", "company", "location", "date_posted", "job_url", "description"]:
         if col not in df.columns:
             df[col] = ""
         df[col] = df[col].fillna("").astype(str).str.strip()
-    df["dedupe_key"] = [ _hash_row(r["title"], r["company"], r["description"]) for _, r in df.iterrows() ]
+
+    df["dedupe_key"] = [_hash_row(r["title"], r["company"], r["description"]) for _, r in df.iterrows()]
     df = df.drop_duplicates(subset=["job_url"]).drop_duplicates(subset=["dedupe_key"])
-    df["salary_min"], df["salary_max"], df["currency"] = zip(*df["description"].fillna("").map(extract_salary))
+
+    salary_tuples = df["description"].fillna("").map(extract_salary).tolist()
+    if salary_tuples:
+        df["salary_min"], df["salary_max"], df["currency"] = zip(*salary_tuples)
+    else:
+        df["salary_min"] = []
+        df["salary_max"] = []
+        df["currency"] = []
+
     return df.drop(columns=["dedupe_key"])

@@ -1,30 +1,50 @@
-import os, itertools, pandas as pd
+import os
+import itertools
 from collections import Counter
+
+import pandas as pd
 from wordcloud import WordCloud
 
+
 def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd.Series:
-    out = {}
-    if jobs_df is not None and not jobs_df.empty:
-        out["num_jobs"] = len(jobs_df)
-        out["unique_employers"] = int(jobs_df['company'].nunique())
-        all_sk = list(itertools.chain.from_iterable(jobs_df["skills"].dropna().tolist()))
-        out["top_skills"] = Counter(all_sk).most_common(30)
-        out["geocoded"] = int(jobs_df[["lat","lon"]].dropna().shape[0])
-        if os.getenv("USE_CLUSTERING","false").lower() == "true":
+    jobs_df = jobs_df if jobs_df is not None else pd.DataFrame()
+    out = {
+        "num_jobs": int(len(jobs_df)),
+        "unique_employers": 0,
+        "top_skills": [],
+        "geocoded": 0,
+        "report_skills": [],
+    }
+
+    if not jobs_df.empty:
+        if "company" in jobs_df.columns:
+            out["unique_employers"] = int(jobs_df["company"].nunique())
+        if "skills" in jobs_df.columns:
+            skills_series = jobs_df["skills"].dropna().tolist()
+            if skills_series:
+                all_sk = list(itertools.chain.from_iterable(skills_series))
+                out["top_skills"] = Counter(all_sk).most_common(30)
+        if {"lat", "lon"}.issubset(jobs_df.columns):
+            out["geocoded"] = int(jobs_df[["lat", "lon"]].dropna().shape[0])
+
+        if os.getenv("USE_CLUSTERING", "false").lower() == "true":
             try:
                 from sklearn.feature_extraction.text import TfidfVectorizer
                 from sklearn.cluster import KMeans
-                vec = TfidfVectorizer(max_features=2000, ngram_range=(1,2), min_df=2)
+
+                vec = TfidfVectorizer(max_features=2000, ngram_range=(1, 2), min_df=2)
                 X = vec.fit_transform(jobs_df["description"].fillna(""))
                 km = KMeans(n_clusters=3, n_init=10, random_state=42)
                 labels = km.fit_predict(X)
                 jobs_df["cluster"] = labels
                 out["cluster_counts"] = Counter(labels)
-            except Exception as e:
-                out["cluster_error"] = str(e)
-    if reports_df is not None and not reports_df.empty:
+            except Exception as exc:
+                out["cluster_error"] = str(exc)
+
+    if reports_df is not None and not reports_df.empty and "skills" in reports_df.columns:
         rep_sk = list(itertools.chain.from_iterable(reports_df["skills"].dropna().tolist()))
         out["report_skills"] = Counter(rep_sk).most_common(30)
+
     return pd.Series(out)
 
 def save_wordcloud(jobs_df: pd.DataFrame, out_path):

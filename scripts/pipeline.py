@@ -18,7 +18,6 @@ def ensure_dirs(base: Path):
     (base / "data").mkdir(exist_ok=True)
     (base / "data" / "processed").mkdir(parents=True, exist_ok=True)
     (base / "reports").mkdir(exist_ok=True)
-    (base / "data").joinpath("geocache.csv").touch(exist_ok=True)
 
 def main():
     load_dotenv()
@@ -27,8 +26,11 @@ def main():
 
     # 1) Scrape
     jobs_df = scrape_sources()
-    if jobs_df.empty:
-        print("No jobs scraped."); return
+    if jobs_df is None or jobs_df.empty:
+        print("No jobs scraped; continuing with placeholder dataset.")
+        jobs_df = pd.DataFrame(columns=[
+            "source", "title", "company", "location", "date_posted", "job_url", "description"
+        ])
 
     # 2) Clean + Dedupe
     jobs_df = clean_and_dedupe(jobs_df)
@@ -78,17 +80,14 @@ def main():
     # 11) Optional Google Sheets sync
     if os.getenv("USE_SHEETS","true").lower() == "true":
         try:
-            from scripts.gsheets_sync import sync_to_google_sheets, sync_to_google_sheets_with_count, sync_reports_to_google_sheets
-            cnt = 0
-            try:
-                cnt = sync_to_google_sheets_with_count(jobs_df)
-            except Exception:
-                sync_to_google_sheets(jobs_df)
-            print(f"Google Sheets: appended {cnt} new job rows.")
-                # sync reports (if any)
-                if reports_df is not None and not reports_df.empty:
-                    rcnt = sync_reports_to_google_sheets(reports_df)
-                    print(f"Google Sheets: appended {rcnt} report rows.")
+            from scripts.gsheets_sync import sync_jobs_to_google_sheets, sync_reports_to_google_sheets
+
+            job_rows = sync_jobs_to_google_sheets(jobs_df)
+            print(f"Google Sheets: appended {job_rows} new job rows.")
+
+            if reports_df is not None and not reports_df.empty:
+                report_rows = sync_reports_to_google_sheets(reports_df)
+                print(f"Google Sheets: appended {report_rows} report rows.")
         except Exception as e:
             print(f"Sheets sync skipped: {e}")
 

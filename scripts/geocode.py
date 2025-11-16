@@ -1,33 +1,46 @@
-import time, pandas as pd
+import pandas as pd
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 from pathlib import Path
 
+
+def _load_cache(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        return pd.DataFrame(columns=["location", "lat", "lon"])
+    try:
+        return pd.read_csv(path)
+    except Exception:
+        return pd.DataFrame(columns=["location", "lat", "lon"])
+
+
 def geocode_locations(df: pd.DataFrame) -> pd.DataFrame:
     base = Path(__file__).resolve().parents[1]
     cache_path = base / "data" / "geocache.csv"
-    cache = pd.read_csv(cache_path) if cache_path.exists() else pd.DataFrame(columns=["location","lat","lon"])
+    cache = _load_cache(cache_path)
 
     geolocator = Nominatim(user_agent="CHARM-geo")
     geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1, swallow_exceptions=True)
 
-    lats, lons = [], []
-    for loc in df["location"].fillna("").astype(str).str.strip():
-        if not loc:
-            lats.append(None); lons.append(None); continue
-        hit = cache[cache["location"]==loc]
-        if not hit.empty:
-            lats.append(hit.iloc[0]["lat"]); lons.append(hit.iloc[0]["lon"]); continue
+    df = df.copy()
+    df["location_norm"] = df["location"].fillna("").astype(str).str.strip()
+
+    known = {row["location"]: (row["lat"], row["lon"]) for _, row in cache.iterrows()}
+    new_entries = []
+
+    for loc in [loc for loc in df["location_norm"].unique() if loc and loc not in known]:
         try:
-            g = geocode(loc)
-            lat = g.latitude if g else None
-            lon = g.longitude if g else None
-            lats.append(lat); lons.append(lon)
-            cache = pd.concat([cache, pd.DataFrame([{"location":loc,"lat":lat,"lon":lon}])], ignore_index=True)
+            result = geocode(loc)
+            lat = result.latitude if result else None
+            lon = result.longitude if result else None
         except Exception:
-            lats.append(None); lons.append(None)
-        time.sleep(0.1)
-    out = df.copy()
-    out["lat"] = lats; out["lon"] = lons
-    cache.to_csv(cache_path, index=False)
-    return out
+            lat = lon = None
+        known[loc] = (lat, lon)
+        new_entries.append({"location": loc, "lat": lat, "lon": lon})
+
+    if new_entries:
+        cache = pd.concat([cache, pd.DataFrame(new_entries)], ignore_index=True)
+        cache.to_csv(cache_path, index=False)
+
+    df["lat"] = df["location_norm"].map(lambda loc: known.get(loc, (None, None))[0])
+    df["lon"] = df["location_norm"].map(lambda loc: known.get(loc, (None, None))[1])
+    return df.drop(columns=["location_norm"])

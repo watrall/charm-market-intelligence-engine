@@ -117,9 +117,6 @@ def scrape_sources():
     df["description"] = [ _fetch_job_desc(u) for u in df["job_url"].tolist() ]
     return df
 
-    df["description"] = [ _fetch_job_desc(u) for u in df["job_url"].tolist() ]
-    return df
-
 
 def _walk_pages(start_url, parser, max_pages=10):
     visited = set()

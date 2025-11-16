@@ -16,4 +16,6 @@ def parse_all_reports(report_dir: Path) -> pd.DataFrame:
                     rows.append({"report_name": p.name, "text": txt})
             except Exception as e:
                 print(f"PDF parse failed for {p.name}: {e}")
+    if not rows:
+        return pd.DataFrame(columns=["report_name", "text"])
     return pd.DataFrame(rows)

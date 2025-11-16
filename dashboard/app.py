@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import ast
 import json
+import re
 from pathlib import Path
 from datetime import datetime
 
@@ -38,6 +40,25 @@ JOBTYPE_ICONS = {
 }
 
 # ---------- Data ----------
+def _coerce_skills(value) -> list[str]:
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return []
+        if raw.startswith("[") and raw.endswith("]"):
+            try:
+                parsed = ast.literal_eval(raw)
+                if isinstance(parsed, list):
+                    return [str(v).strip() for v in parsed if str(v).strip()]
+            except (ValueError, SyntaxError):
+                pass
+        tokens = re.split(r"[;|,]", raw)
+        return [t.strip(" []'\"") for t in tokens if t.strip(" []'\"")]
+    return []
+
+
 @st.cache_data(show_spinner=False)
 def load_jobs() -> pd.DataFrame:
     fp = DATA_DIR / "jobs.csv"
@@ -64,15 +85,7 @@ def load_jobs() -> pd.DataFrame:
 
     # skills → list[str]
     if "skills" in df.columns:
-        df["skills_list"] = (
-            df["skills"]
-            .fillna("")
-            .astype(str)
-            .str.replace("|", ";")
-            .str.replace(",", ";")
-            .str.split(";")
-            .apply(lambda lst: [s.strip() for s in lst if s and isinstance(s, str)])
-        )
+        df["skills_list"] = df["skills"].apply(_coerce_skills)
     else:
         df["skills_list"] = [[] for _ in range(len(df))]
 
