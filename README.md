@@ -4,7 +4,7 @@ This is a clean, runnable reference implementation for automated market analysis
 
 CHARM = Cultural Heritage & Archaeologcial Resource Management
 
-**Outcomes:** scrape job postings (American Anthropological Association, Society for American Archaeology, & American Cultural Resources Association) → clean/dedupe → parse uploaded PDFs (industry reports) → spaCy NER + skills → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
+**Outcomes:** scrape job postings (American Anthropological Association, Society for American Archaeology, & American Cultural Resources Association) → clean/dedupe → parse uploaded PDFs (industry reports) → spaCy Natural Language Processing (entity + skill extraction) → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
 
 ## Quick Start
 ```bash
@@ -42,11 +42,11 @@ python scripts/pipeline.py       # run the end-to-end pipeline
 ```
 
 ## Architecture
-- **n8n orchestration**: Cron + webhook → one Execute Command (runs the pipeline).
-- **Python pipeline**: scraping → cleaning/dedupe → report parsing → NLP → sentiment → geocoding → analysis → insights → persistence.
+- **n8n orchestration**: n8n is an open-source workflow automation tool; we use it for Cron/Webhook triggers that run the pipeline via one Execute Command.
+- **Python pipeline**: scraping → cleaning/dedupe → report parsing → Natural Language Processing (NLP) → sentiment → geocoding → analysis → insights → persistence.
 - **Storage**: CSVs for the dashboard + **SQLite** for durable querying; **Google Sheets** for sharing raw rows.
 - **Dashboard**: Streamlit with **Plotly** charts and a **Folium** map (heatmap + clustered markers).
-- **LLM (optional)**: Brief insights; on by default (but can be turned off by user).
+- **Large Language Model (LLM, optional)**: Brief insights; on by default (but can be turned off by user).
 
 ## n8n Scheduling (Synology)
 Import `n8n/charm_workflow.json` and point Execute Command to:
@@ -60,7 +60,7 @@ bash -lc "cd /data/charm-market-intelligence-engine && source .venv/bin/activate
 - Expand rules in `scripts/insights.py` to map skills → program formats.
 
 ## Google Sheets Integration (ON by default)
-1. Enable **Google Sheets API** and **Google Drive API** in GCP.
+1. Enable **Google Sheets API** and **Google Drive API** in Google Cloud Platform (GCP).
 2. Create a **Service Account**, download the JSON key to `secrets/service_account.json` (or your path).
 3. Set `GOOGLE_SHEET_ID` and `GOOGLE_SERVICE_ACCOUNT_FILE` in `.env` (replace the placeholders).
 4. Share the Sheet with the service account email as **Editor**.
@@ -73,7 +73,7 @@ python scripts/gsheets_test.py
 - **No jobs scraped**: Update CSS selectors in `scripts/scrape_jobs.py`.
 - **spaCy model missing**: `python -m spacy download en_core_web_sm`.
 - **Sheets append fails**: Check `GOOGLE_SHEET_ID`, service account permissions, and network egress.
-- **Geocoding slow**: Nominatim is rate-limited; a geocache reduces repeat lookups.
+- **Geocoding slow**: Nominatim (the OpenStreetMap geocoding service) is rate-limited; a geocache reduces repeat lookups.
 
 ## Insight prompt (external & editable)
 The LLM question set lives in `config/insight_prompt.md`. It’s plain text with **{{variables}}** you can edit:
@@ -178,8 +178,8 @@ How it works:
 - **Pagination:** the scrapers follow “Next” links (rel/aria/title/text) with a safe page limit.
 - **Politeness:** conservative request pacing; user‑agent identifies tool purpose.
 - **Dedupe:** by `job_url` and content hash to avoid churn and inflated counts.
-- **Respect sites:** review **robots.txt** and Terms of Service; scale cautiously and cache where possible.
-- **No PII:** the pipeline collects job‑level, non‑personal data only.
+- **Respect sites:** review **robots.txt** (the crawl-policy file published by each site) and Terms of Service; scale cautiously and cache where possible.
+- **No PII:** the pipeline collects job-level, non-personal data only; avoid ingesting personally identifiable information (PII).
 
 
 ## Mattermost notifications
@@ -229,7 +229,7 @@ Import `n8n/charm_workflow_mattermost.json` for a version of the workflow that *
 - Zero results trigger a “No jobs scraped” alert automatically
 
 
-## LLM options (self-hosted vs. cloud)
+## Large Language Model (LLM) options (self-hosted vs. cloud)
 This pipeline supports two classes of LLM backends:
 
 **Cloud (commercial): OpenAI**  
@@ -328,5 +328,6 @@ Everything is idempotent: duplicates are filtered, pagination is capped, geocodi
 - **Google Sheets sync (optional):** Setting `USE_SHEETS=true` turns on both Sheets and Drive APIs. They are metered after the free tier, and every run makes a few dozen append/read calls. Leave it `false` until you create a GCP project, confirm quotas, and budget for increased throughput (e.g., batch jobs nightly instead of per-scrape).
 - **Geocoding:** The built-in Nominatim client is free but rate-limited to 1 request/sec; heavy usage may require hosting your own instance. Because geocoding is cached in `data/geocache.csv`, reruns stay cost-free unless you clear the cache.
 - **Storage/dashboards:** Streamlit + SQLite incur no extra spend—everything runs locally. When deploying to cloud infrastructure, include VM/storage costs in your overall estimate.
+- **Sheets cache resets:** The Google Sheets sync stores cached job/report IDs under `data/cache/`. If someone edits or deletes rows directly in the Sheet, clear those files before the next run so the pipeline can rebuild its local view of existing rows.
 
 Document these toggles in your runbook so reviewers understand how to perform a zero-cost demo vs. a production run with LLM + Sheets enabled.
