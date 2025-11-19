@@ -3,18 +3,19 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from threading import Lock
+from threading import Lock, local
 
 MAX_WORKERS = int(os.getenv("SCRAPER_MAX_WORKERS", "4"))
 REQUEST_INTERVAL = float(os.getenv("SCRAPER_REQUEST_INTERVAL", "0.8"))
-_last_request = 0.0
 _rate_lock = Lock()
+_thread_state = local()
+_tokens_used = 0
+_batch_start = time.monotonic()
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CACHE_DIR = BASE_DIR / "data" / "cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DESC_CACHE_PATH = CACHE_DIR / "job_descriptions.json"
-SESSION = requests.Session()
 _DESC_CACHE = None
 _DESC_CACHE_DIRTY = False
 
@@ -77,24 +78,36 @@ def _find_next_page(soup, base):
         pass
     return nxt
 
-def _respect_rate_limit():
-    global _last_request
+def _acquire_slot():
+    """Throttle batches of MAX_WORKERS requests every REQUEST_INTERVAL seconds."""
+    global _tokens_used, _batch_start
     with _rate_lock:
         now = time.monotonic()
-        wait = REQUEST_INTERVAL - (now - _last_request)
-        if wait > 0:
-            time.sleep(wait)
-        _last_request = time.monotonic()
+        elapsed = now - _batch_start
+        if elapsed >= REQUEST_INTERVAL:
+            _tokens_used = 0
+            _batch_start = now
+        if _tokens_used >= MAX_WORKERS:
+            sleep_for = REQUEST_INTERVAL - elapsed if elapsed < REQUEST_INTERVAL else 0
+            if sleep_for > 0:
+                time.sleep(sleep_for)
+            _tokens_used = 0
+            _batch_start = time.monotonic()
+        _tokens_used += 1
 
 
 def _fetch(url):
-    _respect_rate_limit()
+    _acquire_slot()
+    session = getattr(_thread_state, "session", None)
+    if session is None:
+        session = requests.Session()
+        _thread_state.session = session
     user_agent = os.getenv("USER_AGENT", "CHARM/1.0 (research)")
-    SESSION.headers.update({"User-Agent": user_agent})
+    session.headers.update({"User-Agent": user_agent})
     backoff = 0.5
     for attempt in range(3):
         try:
-            resp = SESSION.get(url, timeout=25)
+            resp = session.get(url, timeout=25)
             resp.raise_for_status()
             return resp.text
         except Exception:

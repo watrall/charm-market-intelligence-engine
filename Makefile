@@ -6,15 +6,16 @@
     SHELL := /bin/bash
 
     # ---- Meta ----
-    .PHONY: help setup venv install run dash sheets-test prompt clean reset-db lint
+.PHONY: help setup venv install run dash sheets-test prompt clean reset-db lint validate-patterns
 
-    help:
+help:
 	@echo "Targets:"
 	@echo "  make setup        Create venv and install requirements"
 	@echo "  make run          Run the full CHARM pipeline"
 	@echo "  make dash         Launch the Streamlit dashboard"
 	@echo "  make sheets-test  Verify Google Sheets access"
 	@echo "  make prompt       Preview the rendered LLM insight prompt"
+	@echo "  make validate-patterns  Compile job pattern regex config"
 	@echo "  make clean        Remove caches and build artifacts"
 	@echo "  make reset-db     Delete SQLite DB (keeps processed CSVs)"
 	@echo "  make lint         Basic style checks (optional)"
@@ -42,8 +43,11 @@
     sheets-test:
 	@$(PY) scripts/gsheets_test.py
 
-    prompt:
+prompt:
 	@$(PY) scripts/preview_prompt.py
+
+validate-patterns:
+	@$(PY) scripts/validate_patterns.py
 
     # ---- Maintenance ----
     clean:

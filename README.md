@@ -48,7 +48,7 @@ The sample `config/.env.example` uses **explicit placeholders** anywhere a key/I
 | `LLM_PROVIDER`, `LLM_MODEL` | `openai`, `gpt-4o-mini` | Choose an LLM backend/model when `USE_LLM=true`. |
 | `GOOGLE_SERVICE_ACCOUNT_FILE`, `GOOGLE_SHEET_ID` | _(empty)_ | Required for Sheets sync/tests. |
 | `SCRAPER_MAX_WORKERS` | `4` | Number of concurrent detail-page fetches; lower for stricter rate limits. |
-| `SCRAPER_REQUEST_INTERVAL` | `0.8` | Minimum seconds between outbound requests (per worker). Increase to be more polite. |
+| `SCRAPER_REQUEST_INTERVAL` | `0.8` | Minimum seconds between outbound requests (global). Increase to slow the scraper. |
 
 After editing, verify:
 ```bash
@@ -73,6 +73,7 @@ bash -lc "cd /data/charm-market-intelligence-engine && source .venv/bin/activate
 - Add parsers in `scripts/scrape_jobs.py` for new job boards.
 - Update `skills/skills_taxonomy.csv` with additional skills/aliases.
 - Expand rules in `scripts/insights.py` to map skills → program formats.
+- Customize `config/job_patterns.json` to tweak job-type/seniority detection; run `python scripts/validate_patterns.py` (or `make validate-patterns`) after edits to ensure regexes compile.
 
 ## Google Sheets Integration (opt-in)
 1. Enable **Google Sheets API** and **Google Drive API** in Google Cloud Platform (GCP).
@@ -348,3 +349,4 @@ Everything is idempotent: duplicates are filtered, pagination is capped, geocodi
 - **Sheets cache resets:** The Google Sheets sync stores cached job/report IDs under `data/cache/`. If someone edits or deletes rows directly in the Sheet, clear those files before the next run so the pipeline can rebuild its local view of existing rows.
 
 Document these toggles in your runbook so reviewers understand how to perform a zero-cost demo vs. a production run with LLM + Sheets enabled.
+- With the defaults (4 workers, 0.8 s interval) expect roughly 5 detail-page fetches per second. Increase the interval or lower workers if a target board publishes stricter rate limits.
