@@ -58,17 +58,17 @@ US_STATE_MAP = {
 }
 STATE_NAME_TO_ABBR = {name.lower(): abbr for abbr, name in US_STATE_MAP.items()}
 
-JOB_TYPE_KEYWORDS = {
-    "field-tech": ["field technician", "field tech", "archaeology technician", "archaeological technician", "crew chief", "crew lead"],
-    "lab/analyst": ["laboratory", "lab ", "collections specialist", "collections manager", "artifact analyst", "osteology"],
-    "architectural-historian": ["architectural historian", "architectural history", "historic preservation"],
-    "pm/pi": ["project manager", "principal investigator", "pi ", "program manager", "project director"],
+JOB_TYPE_PATTERNS = {
+    "field-tech": re.compile(r"\b(field (tech|technician)|archaeolog(y|ical) technician|crew (chief|lead))", re.I),
+    "lab/analyst": re.compile(r"\b(lab(oratory)?|collections (specialist|manager)|artifact analyst|osteology)\b", re.I),
+    "architectural-historian": re.compile(r"\barchitectural (history|historian)|historic preservation\b", re.I),
+    "pm/pi": re.compile(r"\b(project|program) manager|principal investigator|\bPI\b", re.I),
 }
-SENIORITY_KEYWORDS = [
-    ("lead/PI", ["principal investigator", "pi ", "project director", "senior manager", "practice lead"]),
-    ("senior", ["senior", "lead ", "manager", "director"]),
-    ("mid", ["mid-level", "mid level", "specialist", "coordinator"]),
-    ("entry", ["entry", "assistant", "technician", "intern"]),
+SENIORITY_PATTERNS = [
+    ("lead/PI", re.compile(r"\b(principal investigator|project director|practice lead|senior manager)\b", re.I)),
+    ("senior", re.compile(r"\b(senior|lead|director|manager)\b", re.I)),
+    ("mid", re.compile(r"\b(mid[-\s]?level|specialist|coordinator)\b", re.I)),
+    ("entry", re.compile(r"\b(entry|assistant|technician|intern)\b", re.I)),
 ]
 
 def extract_salary(text: str):
@@ -108,16 +108,16 @@ def _parse_city_state(loc: str) -> Tuple[str, str]:
     return city, state
 
 def _infer_job_type(title: str, description: str) -> str:
-    text = f"{title or ''} {description or ''}".lower()
-    for bucket, keywords in JOB_TYPE_KEYWORDS.items():
-        if any(k in text for k in keywords):
+    text = f"{title or ''} {description or ''}"
+    for bucket, pattern in JOB_TYPE_PATTERNS.items():
+        if pattern.search(text):
             return bucket
     return ""
 
 def _infer_seniority(title: str, description: str) -> str:
-    text = f"{title or ''} {description or ''}".lower()
-    for bucket, keywords in SENIORITY_KEYWORDS:
-        if any(k in text for k in keywords):
+    text = f"{title or ''} {description or ''}"
+    for bucket, pattern in SENIORITY_PATTERNS:
+        if pattern.search(text):
             return bucket
     return ""
 

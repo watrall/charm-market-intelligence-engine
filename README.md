@@ -37,6 +37,17 @@ The sample `config/.env.example` uses **explicit placeholders** anywhere a key/I
 - `GEOCODE_CONTACT_EMAIL=ENTER_CONTACT_EMAIL_HERE`
   - Required by Nominatim usage guidelines so your geocoding requests have a contact.
 
+### Quick reference
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `USE_SQLITE` | `true` | Persist processed jobs/reports into `data/charm.db`. |
+| `USE_SHEETS` | `false` | Append jobs/reports to Google Sheets when credentials are configured. |
+| `USE_LLM` | `false` | Enable the optional LLM brief via `config/insight_prompt.md`. |
+| `USER_AGENT` | `CHARM/1.0 (research)` | HTTP header for scrapers; include contact info. |
+| `GEOCODE_CONTACT_EMAIL` | _(empty)_ | Injected into the Nominatim UA per policy. |
+| `LLM_PROVIDER`, `LLM_MODEL` | `openai`, `gpt-4o-mini` | Choose an LLM backend/model when `USE_LLM=true`. |
+| `GOOGLE_SERVICE_ACCOUNT_FILE`, `GOOGLE_SHEET_ID` | _(empty)_ | Required for Sheets sync/tests. |
+
 After editing, verify:
 ```bash
 python scripts/gsheets_test.py   # check Google Sheets access

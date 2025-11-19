@@ -2,6 +2,7 @@ import time, re, os, json, requests, pandas as pd
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CACHE_DIR = BASE_DIR / "data" / "cache"
@@ -126,7 +127,7 @@ def _fetch_job_desc(url):
     if cached is not None:
         return cached
     try:
-        html = _fetch(url, sleep=0.6)
+        html = _fetch(url, sleep=0.2)
         soup = BeautifulSoup(html, "html.parser")
         cont = soup.find("article") or soup.find("div", id="job-description") or soup.find("div", class_=re.compile("description|content", re.I))
         txt = cont.get_text(" ", strip=True) if cont else soup.get_text(" ", strip=True)
@@ -154,7 +155,17 @@ def scrape_sources():
             print(f"Scrape failed for {base}: {e}")
     df = pd.DataFrame(rows)
     if df.empty: return df
-    df["description"] = [ _fetch_job_desc(u) for u in df["job_url"].tolist() ]
+    urls = df["job_url"].tolist()
+    descriptions = [""] * len(urls)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        future_map = {pool.submit(_fetch_job_desc, u): idx for idx, u in enumerate(urls)}
+        for future in as_completed(future_map):
+            idx = future_map[future]
+            try:
+                descriptions[idx] = future.result()
+            except Exception:
+                descriptions[idx] = ""
+    df["description"] = descriptions
     _save_desc_cache()
     return df
 

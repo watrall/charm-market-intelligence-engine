@@ -64,7 +64,6 @@ def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd
                 X = vec.fit_transform(jobs_df["description"].fillna(""))
                 km = KMeans(n_clusters=3, n_init=10, random_state=42)
                 labels = km.fit_predict(X)
-                jobs_df["cluster"] = labels
                 out["cluster_counts"] = Counter(labels)
             except Exception as exc:
                 out["cluster_error"] = str(exc)

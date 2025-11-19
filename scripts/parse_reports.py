@@ -31,9 +31,16 @@ def _save_cache(cache: dict):
     CACHE_FILE.write_text(json.dumps(cache), encoding="utf-8")
 
 
-def _write_text_file(key: str, text: str, sig: tuple) -> str:
-    digest = hashlib.sha256(f"{key}:{sig[0]}:{sig[1]}".encode("utf-8")).hexdigest()
-    path = TEXT_DIR / f"{digest}.txt"
+def _checksum(path: Path) -> str:
+    hasher = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(8192), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+def _write_text_file(filename: str, text: str, checksum: str) -> str:
+    path = TEXT_DIR / f"{checksum}-{hashlib.sha256(filename.encode('utf-8')).hexdigest()}.txt"
     path.write_text(text, encoding="utf-8")
     return path.name
 
@@ -63,15 +70,13 @@ def parse_all_reports(report_dir: Path) -> pd.DataFrame:
         seen_files.add(str(p.resolve()))
         key = str(p.resolve())
         meta = cache.get(key, {})
-        stat = p.stat()
-        cached_sig = (meta.get("mtime"), meta.get("size"))
-        sig = (stat.st_mtime, stat.st_size)
-        txt = _load_text_file(meta.get("text_file")) if cached_sig == sig else None
+        checksum = _checksum(p)
+        txt = _load_text_file(meta.get("text_file")) if meta.get("checksum") == checksum else None
         if txt is None:
             try:
                 txt = extract_text_pdf(p)
-                text_file = _write_text_file(key, txt, sig)
-                cache[key] = {"mtime": stat.st_mtime, "size": stat.st_size, "text_file": text_file}
+                text_file = _write_text_file(p.name, txt, checksum)
+                cache[key] = {"checksum": checksum, "text_file": text_file}
                 dirty = True
             except Exception as e:
                 print(f"PDF parse failed for {p.name}: {e}")
@@ -96,7 +101,7 @@ def parse_all_reports(report_dir: Path) -> pd.DataFrame:
     if stale_keys:
         _save_cache(cache)
     # remove orphaned text blobs
-    referenced = {meta.get("text_file") for meta in cache.values()}
+    referenced = {meta.get("text_file") for meta in cache.values() if meta.get("text_file")}
     for txt_file in TEXT_DIR.glob("*.txt"):
         if txt_file.name not in referenced:
             try:
