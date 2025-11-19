@@ -1,4 +1,5 @@
 import os
+import json
 import itertools
 from collections import Counter
 
@@ -17,7 +18,7 @@ def _ensure_skill_lists(series: pd.Series):
                 continue
             if entry.startswith("["):
                 try:
-                    parsed = pd.io.json.loads(entry)
+                    parsed = json.loads(entry)
                     if isinstance(parsed, list):
                         lists.append([str(v) for v in parsed])
                         continue

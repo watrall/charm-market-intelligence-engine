@@ -3,14 +3,11 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from pathlib import Path
 
-UA = os.getenv("USER_AGENT", "CHARM/1.0 (research)")
-HEADERS = {"User-Agent": UA}
 BASE_DIR = Path(__file__).resolve().parents[1]
 CACHE_DIR = BASE_DIR / "data" / "cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DESC_CACHE_PATH = CACHE_DIR / "job_descriptions.json"
 SESSION = requests.Session()
-SESSION.headers.update(HEADERS)
 _DESC_CACHE = None
 _DESC_CACHE_DIRTY = False
 
@@ -75,6 +72,8 @@ def _find_next_page(soup, base):
 
 def _fetch(url, sleep=1.0):
     time.sleep(sleep)
+    user_agent = os.getenv("USER_AGENT", "CHARM/1.0 (research)")
+    SESSION.headers.update({"User-Agent": user_agent})
     r = SESSION.get(url, timeout=25); r.raise_for_status(); return r.text
 
 def _parse_generic(soup, base, source):

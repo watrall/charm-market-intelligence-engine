@@ -55,10 +55,12 @@ def parse_all_reports(report_dir: Path) -> pd.DataFrame:
     cache = _load_cache()
     dirty = False
     rows = []
+    seen_files = set()
 
     for p in report_dir.iterdir():
         if p.suffix.lower() != ".pdf":
             continue
+        seen_files.add(str(p.resolve()))
         key = str(p.resolve())
         meta = cache.get(key, {})
         stat = p.stat()
@@ -78,6 +80,29 @@ def parse_all_reports(report_dir: Path) -> pd.DataFrame:
 
     if dirty:
         _save_cache(cache)
+
+    # prune text files and cache entries no longer tied to live PDFs
+    stale_keys = [k for k in list(cache.keys()) if k not in seen_files]
+    for key in stale_keys:
+        meta = cache.pop(key, {})
+        fname = meta.get("text_file")
+        if fname:
+            path = TEXT_DIR / fname
+            if path.exists():
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
+    if stale_keys:
+        _save_cache(cache)
+    # remove orphaned text blobs
+    referenced = {meta.get("text_file") for meta in cache.values()}
+    for txt_file in TEXT_DIR.glob("*.txt"):
+        if txt_file.name not in referenced:
+            try:
+                txt_file.unlink()
+            except OSError:
+                pass
 
     if not rows:
         return pd.DataFrame(columns=["report_name", "text"])
