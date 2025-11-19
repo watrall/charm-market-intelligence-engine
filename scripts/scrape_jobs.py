@@ -77,17 +77,31 @@ def _find_next_page(soup, base):
         pass
     return nxt
 
-def _fetch(url, sleep=1.0):
+def _respect_rate_limit():
     global _last_request
     with _rate_lock:
-        elapsed = time.time() - _last_request
-        if elapsed < REQUEST_INTERVAL:
-            time.sleep(REQUEST_INTERVAL - elapsed)
-        _last_request = time.time()
+        now = time.monotonic()
+        wait = REQUEST_INTERVAL - (now - _last_request)
+        if wait > 0:
+            time.sleep(wait)
+        _last_request = time.monotonic()
+
+
+def _fetch(url):
+    _respect_rate_limit()
     user_agent = os.getenv("USER_AGENT", "CHARM/1.0 (research)")
     SESSION.headers.update({"User-Agent": user_agent})
-    time.sleep(min(sleep, REQUEST_INTERVAL))
-    r = SESSION.get(url, timeout=25); r.raise_for_status(); return r.text
+    backoff = 0.5
+    for attempt in range(3):
+        try:
+            resp = SESSION.get(url, timeout=25)
+            resp.raise_for_status()
+            return resp.text
+        except Exception:
+            if attempt == 2:
+                raise
+            time.sleep(backoff)
+            backoff *= 2
 
 def _parse_generic(soup, base, source):
     jobs = []
@@ -139,7 +153,7 @@ def _fetch_job_desc(url):
     if cached is not None:
         return cached
     try:
-        html = _fetch(url, sleep=0.2)
+        html = _fetch(url)
         soup = BeautifulSoup(html, "html.parser")
         cont = soup.find("article") or soup.find("div", id="job-description") or soup.find("div", class_=re.compile("description|content", re.I))
         txt = cont.get_text(" ", strip=True) if cont else soup.get_text(" ", strip=True)

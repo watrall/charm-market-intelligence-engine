@@ -47,6 +47,8 @@ The sample `config/.env.example` uses **explicit placeholders** anywhere a key/I
 | `GEOCODE_CONTACT_EMAIL` | _(empty)_ | Injected into the Nominatim UA per policy. |
 | `LLM_PROVIDER`, `LLM_MODEL` | `openai`, `gpt-4o-mini` | Choose an LLM backend/model when `USE_LLM=true`. |
 | `GOOGLE_SERVICE_ACCOUNT_FILE`, `GOOGLE_SHEET_ID` | _(empty)_ | Required for Sheets sync/tests. |
+| `SCRAPER_MAX_WORKERS` | `4` | Number of concurrent detail-page fetches; lower for stricter rate limits. |
+| `SCRAPER_REQUEST_INTERVAL` | `0.8` | Minimum seconds between outbound requests (per worker). Increase to be more polite. |
 
 After editing, verify:
 ```bash
@@ -190,7 +192,7 @@ How it works:
 
 ## Scraping notes & governance
 - **Pagination:** the scrapers follow “Next” links (rel/aria/title/text) with a safe page limit.
-- **Politeness:** configurable rate limiting + polite User-Agent (see `SCRAPER_MAX_WORKERS` / `SCRAPER_REQUEST_INTERVAL` in `.env`). Detail pages fan out concurrently but respect those backoffs.
+- **Politeness:** configurable rate limiting + polite User-Agent (see `SCRAPER_MAX_WORKERS` / `SCRAPER_REQUEST_INTERVAL` in `.env`). For example, the defaults (~4 workers, 0.8 s interval) average ~5 detail fetches/sec; lower these values if the target site throttles faster.
 - **Job-description caching:** fetched detail pages are stored in `data/cache/job_descriptions.json` so reruns avoid hammering the same postings. Adjust worker count/interval in `.env` to tune throughput.
 - **Dedupe:** by `job_url` and content hash to avoid churn and inflated counts.
 - **Respect sites:** review **robots.txt** (the crawl-policy file published by each site) and Terms of Service; scale cautiously and cache where possible.

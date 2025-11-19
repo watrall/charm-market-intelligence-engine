@@ -1,5 +1,6 @@
-import hashlib, pandas as pd, re
+import hashlib, pandas as pd, re, json
 from typing import Tuple
+from pathlib import Path
 
 _SAL_RE = re.compile(r'(\$|USD\s*)?\s*(\d{2,3}[,\.]?\d{0,3})(?:\s*[-–to]{1,3}\s*(\d{2,3}[,\.]?\d{0,3}))?\s*(?:per\s*(year|yr|hour|hr|annum))?', re.I)
 
@@ -62,20 +63,38 @@ _JOB_PATTERNS = None
 _SENIORITY_PATTERNS = None
 
 
+def _compile_entries(entries):
+    compiled = []
+    for entry in entries:
+        pattern = entry
+        if isinstance(entry, dict):
+            pattern = entry.get("pattern")
+        if not pattern:
+            raise ValueError("Each job pattern entry must include a 'pattern'.")
+        compiled.append(f"(?:{pattern})")
+    return re.compile("|".join(compiled), re.I) if compiled else re.compile(r"(?!x)")
+
+
 def _load_patterns():
     global _JOB_PATTERNS, _SENIORITY_PATTERNS
     if _JOB_PATTERNS is not None and _SENIORITY_PATTERNS is not None:
         return _JOB_PATTERNS, _SENIORITY_PATTERNS
     config_path = Path(__file__).resolve().parents[1] / "config" / "job_patterns.json"
-    with config_path.open("r", encoding="utf-8") as handle:
-        data = json.load(handle)
+    try:
+        with config_path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(f"Missing job pattern config: {config_path}") from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in {config_path}: {exc}") from exc
+
     job_patterns = {
-        bucket: re.compile("|".join(patterns), re.I)
-        for bucket, patterns in data.get("job_type", {}).items()
+        bucket: _compile_entries(entries)
+        for bucket, entries in data.get("job_type", {}).items()
     }
     seniority_patterns = [
-        (bucket, re.compile("|".join(patterns), re.I))
-        for bucket, patterns in data.get("seniority", {}).items()
+        (bucket, _compile_entries(entries))
+        for bucket, entries in data.get("seniority", {}).items()
     ]
     _JOB_PATTERNS, _SENIORITY_PATTERNS = job_patterns, seniority_patterns
     return _JOB_PATTERNS, _SENIORITY_PATTERNS
