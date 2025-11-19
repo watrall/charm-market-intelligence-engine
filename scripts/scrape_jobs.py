@@ -123,8 +123,8 @@ def parse_aaa(html, base):
 
 def _fetch_job_desc(url):
     cache = _load_desc_cache()
-    cached = cache.get(url)
-    if cached:
+    cached = cache.get(url, None)
+    if cached is not None:
         return cached
     try:
         html = _fetch(url, sleep=0.6)
@@ -137,6 +137,8 @@ def _fetch_job_desc(url):
         _DESC_CACHE_DIRTY = True
         return snippet
     except Exception:
+        cache[url] = ""
+        _DESC_CACHE_DIRTY = True
         return ""
 
 def scrape_sources():

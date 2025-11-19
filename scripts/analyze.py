@@ -6,6 +6,27 @@ import pandas as pd
 from wordcloud import WordCloud
 
 
+def _ensure_skill_lists(series: pd.Series):
+    lists = []
+    for entry in series.dropna():
+        if isinstance(entry, list):
+            lists.append(entry)
+        elif isinstance(entry, str):
+            entry = entry.strip()
+            if not entry:
+                continue
+            if entry.startswith("["):
+                try:
+                    parsed = pd.io.json.loads(entry)
+                    if isinstance(parsed, list):
+                        lists.append([str(v) for v in parsed])
+                        continue
+                except Exception:
+                    pass
+            lists.append([token.strip() for token in entry.split(";") if token.strip()])
+    return lists
+
+
 def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd.Series:
     jobs_df = jobs_df if jobs_df is not None else pd.DataFrame()
     out = {
@@ -26,7 +47,7 @@ def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd
             ).most_common(20)
             out["top_employers"] = top_employers
         if "skills" in jobs_df.columns:
-            skills_series = jobs_df["skills"].dropna().tolist()
+            skills_series = _ensure_skill_lists(jobs_df["skills"])
             if skills_series:
                 all_sk = list(itertools.chain.from_iterable(skills_series))
                 out["top_skills"] = Counter(all_sk).most_common(30)

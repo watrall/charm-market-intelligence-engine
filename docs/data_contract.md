@@ -16,7 +16,7 @@ This document describes the structure of the primary artifacts produced by `scri
 | `job_type` | string | Normalized job type bucket (e.g., `field-tech`). |
 | `seniority` | string | Normalized seniority bucket (`entry`, `mid`, `senior`, `lead/PI`). |
 | `skills` | string | Semicolon-delimited normalized skills. |
-| `skills_list` | list[string] | Helper column used by the dashboard (generated when loading). |
+| `skills_list` | list[string] | JSON string representing the normalized skill list (use `json.loads` before iterating). |
 | `salary_min`, `salary_max` | float | Parsed USD salary bounds when available. |
 | `currency` | string | Salary currency code. |
 | `url` | string | Canonical job URL. |

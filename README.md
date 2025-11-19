@@ -61,7 +61,7 @@ bash -lc "cd /data/charm-market-intelligence-engine && source .venv/bin/activate
 - Update `skills/skills_taxonomy.csv` with additional skills/aliases.
 - Expand rules in `scripts/insights.py` to map skills → program formats.
 
-## Google Sheets Integration (ON by default)
+## Google Sheets Integration (opt-in)
 1. Enable **Google Sheets API** and **Google Drive API** in Google Cloud Platform (GCP).
 2. Create a **Service Account**, download the JSON key to `secrets/service_account.json` (or your path).
 3. Set `GOOGLE_SHEET_ID` and `GOOGLE_SERVICE_ACCOUNT_FILE` in `.env` (replace the placeholders).
@@ -99,8 +99,8 @@ Dashboard design notes:
 - Sidebar filters drive all sections, so the page stays uncluttered.
 
 
-## LLM options (ON by default)
-The pipeline sets `USE_LLM=true` by default and will render the external prompt (`config/insight_prompt.md`) with your current data.
+## LLM options (opt-in)
+By default `USE_LLM=false` in `config/.env.example`, so the rules-based brief runs without triggering model calls. Flip it to `true` only when you are ready to authenticate a provider. When enabled, the pipeline renders the external prompt (`config/insight_prompt.md`) with your current data.
 
 Choose a provider in `.env`:
 - `LLM_PROVIDER=openai` → set `OPENAI_API_KEY=ENTER_OPENAI_API_KEY_HERE`

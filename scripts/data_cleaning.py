@@ -93,7 +93,7 @@ def _parse_city_state(loc: str) -> Tuple[str, str]:
     if not loc:
         return "", ""
     cleaned = re.sub(r"\s+", " ", loc)
-    parts = [p.strip() for p in re.split(r"[,/;|-]", cleaned) if p.strip()]
+    parts = [p.strip() for p in re.split(r"[,\-/;|]", cleaned) if p.strip()]
     city = parts[0] if parts else cleaned.strip()
     state = ""
     for token in parts[1:]:

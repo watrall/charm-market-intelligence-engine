@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 from dotenv import load_dotenv
 import pandas as pd
@@ -31,6 +32,23 @@ def enrich_report_metadata(df: pd.DataFrame | None) -> pd.DataFrame | None:
 
     df["top_entities"] = df.apply(summarize_entities, axis=1)
     return df
+
+
+def _skills_to_string(value):
+    if isinstance(value, list):
+        return ";".join(value)
+    if isinstance(value, str):
+        return value
+    return ""
+
+
+def _skills_to_json(value):
+    if isinstance(value, list):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, str) and value.strip():
+        parts = [part.strip() for part in value.split(";") if part.strip()]
+        return json.dumps(parts, ensure_ascii=False)
+    return "[]"
 
 
 def ensure_dirs(base: Path):
@@ -72,7 +90,10 @@ def main():
 
     # 7) Save processed
     proc = base / "data" / "processed"
-    jobs_df.to_csv(proc / "jobs.csv", index=False)
+    jobs_to_save = jobs_df.copy()
+    jobs_to_save["skills_list"] = jobs_to_save["skills"].apply(_skills_to_json)
+    jobs_to_save["skills"] = jobs_to_save["skills"].apply(_skills_to_string)
+    jobs_to_save.to_csv(proc / "jobs.csv", index=False)
     if reports_df is not None and not reports_df.empty:
         reports_df.to_csv(proc / "reports.csv", index=False)
 
