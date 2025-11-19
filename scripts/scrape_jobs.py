@@ -7,10 +7,11 @@ from threading import Lock, local
 
 MAX_WORKERS = int(os.getenv("SCRAPER_MAX_WORKERS", "4"))
 REQUEST_INTERVAL = float(os.getenv("SCRAPER_REQUEST_INTERVAL", "0.8"))
+REFILL_RATE = MAX_WORKERS / max(REQUEST_INTERVAL, 0.1)
 _rate_lock = Lock()
 _thread_state = local()
-_tokens_used = 0
-_batch_start = time.monotonic()
+_tokens = float(MAX_WORKERS)
+_last_refill = time.monotonic()
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CACHE_DIR = BASE_DIR / "data" / "cache"
@@ -79,21 +80,22 @@ def _find_next_page(soup, base):
     return nxt
 
 def _acquire_slot():
-    """Throttle batches of MAX_WORKERS requests every REQUEST_INTERVAL seconds."""
-    global _tokens_used, _batch_start
-    with _rate_lock:
-        now = time.monotonic()
-        elapsed = now - _batch_start
-        if elapsed >= REQUEST_INTERVAL:
-            _tokens_used = 0
-            _batch_start = now
-        if _tokens_used >= MAX_WORKERS:
-            sleep_for = REQUEST_INTERVAL - elapsed if elapsed < REQUEST_INTERVAL else 0
-            if sleep_for > 0:
-                time.sleep(sleep_for)
-            _tokens_used = 0
-            _batch_start = time.monotonic()
-        _tokens_used += 1
+    """Token bucket: allow up to MAX_WORKERS requests per REQUEST_INTERVAL on average."""
+    global _tokens, _last_refill
+    while True:
+        with _rate_lock:
+            now = time.monotonic()
+            elapsed = now - _last_refill
+            if elapsed > 0:
+                _tokens = min(MAX_WORKERS, _tokens + elapsed * REFILL_RATE)
+                _last_refill = now
+            if _tokens >= 1.0:
+                _tokens -= 1.0
+                return
+            # Need to wait for enough tokens to accumulate
+            missing = 1.0 - _tokens
+            wait_time = missing / REFILL_RATE
+        time.sleep(max(wait_time, 0.05))
 
 
 def _fetch(url):
