@@ -1,5 +1,13 @@
 # Changelog
 
+## 2025-09-15 — Schema alignment & reliability
+- Added `config/.env.example` so Quick Start instructions work out of the box and documented defaults are real.
+- `jobs.csv` now includes the documented fields (`city`, `state`, `job_type`, `seniority`, canonical `url`, salary hints) via lightweight parsing/heuristics. `analysis.json` also contains `top_employers` plus a `run_timestamp`.
+- Reports parsing caches extracted text, records `word_count`/`top_entities`, and dedupes inserts in SQLite; unchanged PDFs no longer incur reprocessing.
+- Scraper reliability: paginators resolve relative links correctly, job descriptions reuse a persistent cache, and `README` reflects the actual job-board coverage.
+- Geocoding uses a configurable user agent with contact email to satisfy Nominatim terms, and Google Sheets tests now call supported helpers to verify credentials/worksheets.
+- SQLite inserts keep numeric fields as real `NULL`/float values, and report upserts are idempotent.
+
 ## 2025-09-08 — Geospatial map updates
 - Added Folium map modes to visualize **skills × seniority × job type**:
   - **Points (clustered):** color by seniority, icon by job type, popup with title/org/skills and a link.

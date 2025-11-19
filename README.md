@@ -4,7 +4,7 @@ This is a clean, runnable reference implementation for automated market analysis
 
 CHARM = Cultural Heritage & Archaeologcial Resource Management
 
-**Outcomes:** scrape job postings (American Anthropological Association, Society for American Archaeology, & American Cultural Resources Association) → clean/dedupe → parse uploaded PDFs (industry reports) → spaCy Natural Language Processing (entity + skill extraction) → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
+**Outcomes:** scrape job postings (American Anthropological Association & American Cultural Resources Association) → clean/dedupe → parse uploaded PDFs (industry reports) → spaCy Natural Language Processing (entity + skill extraction) → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
 
 ## Quick Start
 ```bash
@@ -26,7 +26,7 @@ streamlit run dashboard/app.py
 > **Cost-safe dry run:** `USE_LLM` and `USE_SHEETS` default to `false` in `.env.example` so you can run the full pipeline locally without triggering OpenAI tokens or Google Sheets API calls. Flip them to `true` only after you are ready to authenticate those paid services.
 
 ## Environment placeholders
-The sample `.env` uses **explicit placeholders** anywhere a key/ID/secret is needed. Replace these with real values:
+The sample `config/.env.example` uses **explicit placeholders** anywhere a key/ID/secret is needed. Replace these with real values:
 
 - `GOOGLE_SERVICE_ACCOUNT_FILE=ENTER_PATH_TO_SERVICE_ACCOUNT_JSON_HERE`
   - Path to your service account key file (e.g., `secrets/service_account.json`).
@@ -34,6 +34,8 @@ The sample `.env` uses **explicit placeholders** anywhere a key/ID/secret is nee
   - The ID from your Sheet URL.
 - `OPENAI_API_KEY=ENTER_OPENAI_API_KEY_HERE`
   - Only needed if `USE_LLM=true` and `LLM_PROVIDER=openai`.
+- `GEOCODE_CONTACT_EMAIL=ENTER_CONTACT_EMAIL_HERE`
+  - Required by Nominatim usage guidelines so your geocoding requests have a contact.
 
 After editing, verify:
 ```bash
@@ -157,6 +159,7 @@ On macOS/Linux it works out of the box. On Windows, use **Git Bash** or **WSL**.
   - write `data/processed/reports.csv`
   - upsert into `data/charm.db` (`reports` table)
   - append a concise row to Google Sheets (worksheet: `reports`) with `report_name`, `word_count`, and aggregated `skills`.
+- Parsed text is cached in `data/cache/reports_cache.json`, so unchanged PDFs aren't re-read on every execution.
 - Reports are combined with job data in analysis and in the LLM prompt context to surface **trends and gaps**.
 
 ## Program mapping & outcomes
@@ -176,7 +179,8 @@ How it works:
 
 ## Scraping notes & governance
 - **Pagination:** the scrapers follow “Next” links (rel/aria/title/text) with a safe page limit.
-- **Politeness:** conservative request pacing; user‑agent identifies tool purpose.
+- **Politeness:** conservative request pacing; user-agent identifies tool purpose.
+- **Job-description caching:** fetched detail pages are stored in `data/cache/job_descriptions.json` so reruns avoid hammering the same postings.
 - **Dedupe:** by `job_url` and content hash to avoid churn and inflated counts.
 - **Respect sites:** review **robots.txt** (the crawl-policy file published by each site) and Terms of Service; scale cautiously and cache where possible.
 - **No PII:** the pipeline collects job-level, non-personal data only; avoid ingesting personally identifiable information (PII).

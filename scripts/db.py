@@ -29,8 +29,10 @@ SCHEMA = {
     "reports": """
         CREATE TABLE IF NOT EXISTS reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            report_name TEXT,
+            report_name TEXT UNIQUE,
             text TEXT,
+            word_count INTEGER,
+            top_entities TEXT,
             created_at TEXT DEFAULT (datetime('now'))
         );
     """
@@ -59,10 +61,22 @@ def init_db(conn):
         cur.execute(idx)
     conn.commit()
 
+def _clean_record(value):
+    if pd.isna(value):
+        return None
+    if isinstance(value, pd.Timestamp):
+        return value.isoformat()
+    return value
+
+
 def upsert_jobs(conn, jobs_df: pd.DataFrame):
     cols = ["source","title","company","location","date_posted","job_url","description","sentiment","lat","lon","salary_min","salary_max","currency"]
-    for _, r in jobs_df[cols].fillna("").iterrows():
-        conn.execute(
+    records = [
+        tuple(_clean_record(r[c]) for c in cols)
+        for _, r in jobs_df[cols].iterrows()
+    ]
+    if records:
+        conn.executemany(
             """INSERT INTO jobs (source,title,company,location,date_posted,job_url,description,sentiment,lat,lon,salary_min,salary_max,currency)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(job_url) DO UPDATE SET
@@ -72,9 +86,9 @@ def upsert_jobs(conn, jobs_df: pd.DataFrame):
                     lat=excluded.lat, lon=excluded.lon,
                     salary_min=excluded.salary_min, salary_max=excluded.salary_max, currency=excluded.currency
             """,
-            tuple(r[c] if c in r else "" for c in cols)
+            records
         )
-    conn.commit()
+        conn.commit()
     if "skills" in jobs_df.columns:
         cur = conn.cursor()
         for _, r in jobs_df.iterrows():
@@ -92,6 +106,20 @@ def upsert_jobs(conn, jobs_df: pd.DataFrame):
 
 def upsert_reports(conn, reports_df: pd.DataFrame):
     if reports_df is None or reports_df.empty: return
-    for _, r in reports_df[["report_name","text"]].fillna("").iterrows():
-        conn.execute("INSERT INTO reports (report_name, text) VALUES (?,?)", (r["report_name"], r["text"]))
-    conn.commit()
+    cols = ["report_name", "text", "word_count", "top_entities"]
+    records = [
+        tuple(_clean_record(r.get(c)) for c in cols)
+        for _, r in reports_df[cols].iterrows()
+    ]
+    if records:
+        conn.executemany(
+            """INSERT INTO reports (report_name, text, word_count, top_entities)
+               VALUES (?,?,?,?)
+               ON CONFLICT(report_name) DO UPDATE SET
+                    text=excluded.text,
+                    word_count=excluded.word_count,
+                    top_entities=excluded.top_entities
+            """,
+            records
+        )
+        conn.commit()

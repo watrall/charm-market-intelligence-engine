@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
@@ -18,7 +19,11 @@ def geocode_locations(df: pd.DataFrame) -> pd.DataFrame:
     cache_path = base / "data" / "geocache.csv"
     cache = _load_cache(cache_path)
 
-    geolocator = Nominatim(user_agent="CHARM-geo")
+    contact = os.getenv("GEOCODE_CONTACT_EMAIL", "").strip()
+    custom_agent = os.getenv("GEOCODE_USER_AGENT", "").strip()
+    agent = custom_agent or (f"CHARM-geo/1.1 ({contact})" if contact else "CHARM-geo/1.1")
+
+    geolocator = Nominatim(user_agent=agent)
     geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1, swallow_exceptions=True)
 
     df = df.copy()

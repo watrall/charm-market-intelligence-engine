@@ -1,9 +1,40 @@
-import time, re, os, requests, pandas as pd
+import time, re, os, json, requests, pandas as pd
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+from pathlib import Path
 
 UA = os.getenv("USER_AGENT", "CHARM/1.0 (research)")
 HEADERS = {"User-Agent": UA}
+BASE_DIR = Path(__file__).resolve().parents[1]
+CACHE_DIR = BASE_DIR / "data" / "cache"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+DESC_CACHE_PATH = CACHE_DIR / "job_descriptions.json"
+SESSION = requests.Session()
+SESSION.headers.update(HEADERS)
+_DESC_CACHE = None
+_DESC_CACHE_DIRTY = False
+
+
+def _load_desc_cache():
+    global _DESC_CACHE
+    if _DESC_CACHE is not None:
+        return _DESC_CACHE
+    if DESC_CACHE_PATH.exists():
+        try:
+            _DESC_CACHE = json.loads(DESC_CACHE_PATH.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            _DESC_CACHE = {}
+    else:
+        _DESC_CACHE = {}
+    return _DESC_CACHE
+
+
+def _save_desc_cache():
+    global _DESC_CACHE_DIRTY
+    if not _DESC_CACHE_DIRTY or _DESC_CACHE is None:
+        return
+    DESC_CACHE_PATH.write_text(json.dumps(_DESC_CACHE), encoding="utf-8")
+    _DESC_CACHE_DIRTY = False
 
 
 def _find_next_page(soup, base):
@@ -44,7 +75,7 @@ def _find_next_page(soup, base):
 
 def _fetch(url, sleep=1.0):
     time.sleep(sleep)
-    r = requests.get(url, headers=HEADERS, timeout=25); r.raise_for_status(); return r.text
+    r = SESSION.get(url, timeout=25); r.raise_for_status(); return r.text
 
 def _parse_generic(soup, base, source):
     jobs = []
@@ -91,12 +122,20 @@ def parse_aaa(html, base):
     return jobs or _parse_generic(soup, base, "AAA")
 
 def _fetch_job_desc(url):
+    cache = _load_desc_cache()
+    cached = cache.get(url)
+    if cached:
+        return cached
     try:
         html = _fetch(url, sleep=0.6)
         soup = BeautifulSoup(html, "html.parser")
         cont = soup.find("article") or soup.find("div", id="job-description") or soup.find("div", class_=re.compile("description|content", re.I))
         txt = cont.get_text(" ", strip=True) if cont else soup.get_text(" ", strip=True)
-        return txt[:20000]
+        snippet = txt[:20000]
+        cache[url] = snippet
+        global _DESC_CACHE_DIRTY
+        _DESC_CACHE_DIRTY = True
+        return snippet
     except Exception:
         return ""
 
@@ -115,6 +154,7 @@ def scrape_sources():
     df = pd.DataFrame(rows)
     if df.empty: return df
     df["description"] = [ _fetch_job_desc(u) for u in df["job_url"].tolist() ]
+    _save_desc_cache()
     return df
 
 
@@ -133,12 +173,12 @@ def _walk_pages(start_url, parser, max_pages=10):
         soup = BeautifulSoup(html, "html.parser")
         # parse using site-specific parser
         try:
-            page_rows = parser(html, start_url)
+            page_rows = parser(html, url)
             rows.extend(page_rows)
         except Exception as e:
             print(f"Parse failed for {url}: {e}")
         # find next
-        nxt = _find_next_page(soup, start_url)
+        nxt = _find_next_page(soup, url)
         url = nxt
     # de-dupe by job_url in-memory
     seen = set(); uniq = []

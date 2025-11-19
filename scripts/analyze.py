@@ -14,11 +14,17 @@ def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd
         "top_skills": [],
         "geocoded": 0,
         "report_skills": [],
+        "top_employers": [],
+        "run_timestamp": pd.Timestamp.utcnow().isoformat(),
     }
 
     if not jobs_df.empty:
         if "company" in jobs_df.columns:
             out["unique_employers"] = int(jobs_df["company"].nunique())
+            top_employers = Counter(
+                [c.strip() for c in jobs_df["company"].fillna("").tolist() if c.strip()]
+            ).most_common(20)
+            out["top_employers"] = top_employers
         if "skills" in jobs_df.columns:
             skills_series = jobs_df["skills"].dropna().tolist()
             if skills_series:

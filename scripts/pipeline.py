@@ -14,9 +14,29 @@ from scripts.insights import generate_insights
 from scripts.db import get_conn, init_db, upsert_jobs, upsert_reports
 
 
+def enrich_report_metadata(df: pd.DataFrame | None) -> pd.DataFrame | None:
+    if df is None or df.empty:
+        return df
+    df = df.copy()
+    df["word_count"] = df["text"].fillna("").astype(str).apply(lambda t: len(t.split()))
+
+    def summarize_entities(row):
+        entities = []
+        for collection in (row.get("orgs") or [], row.get("places") or []):
+            for value in collection:
+                cleaned = str(value).strip()
+                if cleaned and cleaned not in entities:
+                    entities.append(cleaned)
+        return ", ".join(entities[:10])
+
+    df["top_entities"] = df.apply(summarize_entities, axis=1)
+    return df
+
+
 def ensure_dirs(base: Path):
     (base / "data").mkdir(exist_ok=True)
     (base / "data" / "processed").mkdir(parents=True, exist_ok=True)
+    (base / "data" / "cache").mkdir(parents=True, exist_ok=True)
     (base / "reports").mkdir(exist_ok=True)
 
 def main():
@@ -42,6 +62,7 @@ def main():
     jobs_df = nlp_enrich(jobs_df, is_job=True)
     if reports_df is not None and not reports_df.empty:
         reports_df = nlp_enrich(reports_df, is_job=False)
+        reports_df = enrich_report_metadata(reports_df)
 
     # 5) Sentiment
     jobs_df = add_sentiment_and_terms(jobs_df, text_col="description")

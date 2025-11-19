@@ -31,6 +31,32 @@ def _authorize():
     return client.open_by_key(sheet_id)
 
 
+def connect_sheet():
+    """Public helper for diagnostics/tests."""
+    return _authorize()
+
+
+def ensure_jobs_worksheet():
+    sheet = connect_sheet()
+    ws = _get_or_create_ws(
+        sheet,
+        os.getenv("GOOGLE_SHEET_WORKSHEET", "jobs"),
+        ["source", "title", "company", "location", "date_posted", "job_url", "skills", "lat", "lon", "sentiment"],
+    )
+    return sheet, ws
+
+
+def ensure_reports_worksheet():
+    sheet = connect_sheet()
+    ws = _get_or_create_ws(
+        sheet,
+        os.getenv("GOOGLE_SHEET_WORKSHEET_REPORTS", "reports"),
+        ["report_name", "word_count", "skills"],
+        cols=10,
+    )
+    return sheet, ws
+
+
 def _get_or_create_ws(sheet, title: str, header: list[str], rows: int = 2000, cols: int = 20):
     try:
         return sheet.worksheet(title)
@@ -139,9 +165,12 @@ def sync_reports_to_google_sheets(reports_df: pd.DataFrame) -> int:
         if not name or name in existing:
             continue
         text = str(record.get("text", ""))
+        word_count = record.get("word_count")
+        if pd.isna(word_count) or not word_count:
+            word_count = len(text.split())
         new_rows.append([
             name,
-            len(text.split()),
+            int(word_count),
             _normalize_skills(record.get("skills")),
         ])
 

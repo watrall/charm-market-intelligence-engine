@@ -6,6 +6,7 @@ import spacy
 
 _nlp = None
 _skills_df_cache: pd.DataFrame | None = None
+_skill_patterns = None
 
 
 def get_nlp():
@@ -35,17 +36,28 @@ def _load_taxonomy(base: Path) -> pd.DataFrame:
     _skills_df_cache = df[["alias", "normalized_skill"]].dropna()
     return _skills_df_cache
 
-
-def _match_skills(text: str, skills_df: pd.DataFrame):
-    text_l = text.lower()
-    found = set()
+def _get_skill_patterns(skills_df: pd.DataFrame):
+    global _skill_patterns
+    if _skill_patterns is not None:
+        return _skill_patterns
+    patterns = []
     for _, row in skills_df.iterrows():
-        alias = row["alias"].strip()
+        alias = row["alias"].strip().lower()
         normalized = row["normalized_skill"].strip() or alias
         if not alias:
             continue
-        pattern = r"(?<![a-zA-Z])" + re.escape(alias.lower()) + r"(?![a-zA-Z])"
-        if re.search(pattern, text_l):
+        rex = re.compile(rf"(?<![a-zA-Z]){re.escape(alias)}(?![a-zA-Z])")
+        patterns.append((rex, normalized))
+    _skill_patterns = patterns
+    return _skill_patterns
+
+
+def _match_skills(text: str, skills_df: pd.DataFrame):
+    text_l = text.lower()
+    patterns = _get_skill_patterns(skills_df)
+    found = set()
+    for pattern, normalized in patterns:
+        if pattern.search(text_l):
             found.add(normalized)
     return sorted(found)
 
