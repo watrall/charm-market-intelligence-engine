@@ -1,0 +1,14 @@
+{
+  "job_type": {
+    "field-tech": ["field (tech|technician)", "archaeolog(y|ical) technician", "crew (chief|lead)"],
+    "lab/analyst": ["lab(oratory)?", "collections (specialist|manager)", "artifact analyst", "osteology"],
+    "architectural-historian": ["architectural (history|historian)", "historic preservation"],
+    "pm/pi": ["(project|program) manager", "principal investigator", "\\bPI\\b"]
+  },
+  "seniority": {
+    "lead/PI": ["principal investigator", "project director", "practice lead", "senior manager"],
+    "senior": ["\\bsenior\\b", "lead", "director", "manager"],
+    "mid": ["mid[-\\s]?level", "specialist", "coordinator"],
+    "entry": ["entry", "assistant", "technician", "intern"]
+  }
+}

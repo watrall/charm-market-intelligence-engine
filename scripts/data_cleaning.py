@@ -58,18 +58,27 @@ US_STATE_MAP = {
 }
 STATE_NAME_TO_ABBR = {name.lower(): abbr for abbr, name in US_STATE_MAP.items()}
 
-JOB_TYPE_PATTERNS = {
-    "field-tech": re.compile(r"\b(field (tech|technician)|archaeolog(y|ical) technician|crew (chief|lead))", re.I),
-    "lab/analyst": re.compile(r"\b(lab(oratory)?|collections (specialist|manager)|artifact analyst|osteology)\b", re.I),
-    "architectural-historian": re.compile(r"\barchitectural (history|historian)|historic preservation\b", re.I),
-    "pm/pi": re.compile(r"\b(project|program) manager|principal investigator|\bPI\b", re.I),
-}
-SENIORITY_PATTERNS = [
-    ("lead/PI", re.compile(r"\b(principal investigator|project director|practice lead|senior manager)\b", re.I)),
-    ("senior", re.compile(r"\b(senior|lead|director|manager)\b", re.I)),
-    ("mid", re.compile(r"\b(mid[-\s]?level|specialist|coordinator)\b", re.I)),
-    ("entry", re.compile(r"\b(entry|assistant|technician|intern)\b", re.I)),
-]
+_JOB_PATTERNS = None
+_SENIORITY_PATTERNS = None
+
+
+def _load_patterns():
+    global _JOB_PATTERNS, _SENIORITY_PATTERNS
+    if _JOB_PATTERNS is not None and _SENIORITY_PATTERNS is not None:
+        return _JOB_PATTERNS, _SENIORITY_PATTERNS
+    config_path = Path(__file__).resolve().parents[1] / "config" / "job_patterns.json"
+    with config_path.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    job_patterns = {
+        bucket: re.compile("|".join(patterns), re.I)
+        for bucket, patterns in data.get("job_type", {}).items()
+    }
+    seniority_patterns = [
+        (bucket, re.compile("|".join(patterns), re.I))
+        for bucket, patterns in data.get("seniority", {}).items()
+    ]
+    _JOB_PATTERNS, _SENIORITY_PATTERNS = job_patterns, seniority_patterns
+    return _JOB_PATTERNS, _SENIORITY_PATTERNS
 
 def extract_salary(text: str):
     if not text: return None, None, None
@@ -108,15 +117,17 @@ def _parse_city_state(loc: str) -> Tuple[str, str]:
     return city, state
 
 def _infer_job_type(title: str, description: str) -> str:
+    job_patterns, _ = _load_patterns()
     text = f"{title or ''} {description or ''}"
-    for bucket, pattern in JOB_TYPE_PATTERNS.items():
+    for bucket, pattern in job_patterns.items():
         if pattern.search(text):
             return bucket
     return ""
 
 def _infer_seniority(title: str, description: str) -> str:
+    _, seniority_patterns = _load_patterns()
     text = f"{title or ''} {description or ''}"
-    for bucket, pattern in SENIORITY_PATTERNS:
+    for bucket, pattern in seniority_patterns:
         if pattern.search(text):
             return bucket
     return ""

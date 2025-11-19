@@ -34,7 +34,10 @@ def _save_cache(cache: dict):
 def _checksum(path: Path) -> str:
     hasher = hashlib.sha256()
     with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(8192), b""):
+        while True:
+            chunk = handle.read(8192)
+            if not chunk:
+                break
             hasher.update(chunk)
     return hasher.hexdigest()
 

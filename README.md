@@ -190,8 +190,8 @@ How it works:
 
 ## Scraping notes & governance
 - **Pagination:** the scrapers follow “Next” links (rel/aria/title/text) with a safe page limit.
-- **Politeness:** conservative request pacing; user-agent identifies tool purpose.
-- **Job-description caching:** fetched detail pages are stored in `data/cache/job_descriptions.json` so reruns avoid hammering the same postings.
+- **Politeness:** configurable rate limiting + polite User-Agent (see `SCRAPER_MAX_WORKERS` / `SCRAPER_REQUEST_INTERVAL` in `.env`). Detail pages fan out concurrently but respect those backoffs.
+- **Job-description caching:** fetched detail pages are stored in `data/cache/job_descriptions.json` so reruns avoid hammering the same postings. Adjust worker count/interval in `.env` to tune throughput.
 - **Dedupe:** by `job_url` and content hash to avoid churn and inflated counts.
 - **Respect sites:** review **robots.txt** (the crawl-policy file published by each site) and Terms of Service; scale cautiously and cache where possible.
 - **No PII:** the pipeline collects job-level, non-personal data only; avoid ingesting personally identifiable information (PII).

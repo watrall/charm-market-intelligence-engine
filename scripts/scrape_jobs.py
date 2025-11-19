@@ -3,6 +3,12 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
+
+MAX_WORKERS = int(os.getenv("SCRAPER_MAX_WORKERS", "4"))
+REQUEST_INTERVAL = float(os.getenv("SCRAPER_REQUEST_INTERVAL", "0.8"))
+_last_request = 0.0
+_rate_lock = Lock()
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CACHE_DIR = BASE_DIR / "data" / "cache"
@@ -72,9 +78,15 @@ def _find_next_page(soup, base):
     return nxt
 
 def _fetch(url, sleep=1.0):
-    time.sleep(sleep)
+    global _last_request
+    with _rate_lock:
+        elapsed = time.time() - _last_request
+        if elapsed < REQUEST_INTERVAL:
+            time.sleep(REQUEST_INTERVAL - elapsed)
+        _last_request = time.time()
     user_agent = os.getenv("USER_AGENT", "CHARM/1.0 (research)")
     SESSION.headers.update({"User-Agent": user_agent})
+    time.sleep(min(sleep, REQUEST_INTERVAL))
     r = SESSION.get(url, timeout=25); r.raise_for_status(); return r.text
 
 def _parse_generic(soup, base, source):
@@ -157,7 +169,7 @@ def scrape_sources():
     if df.empty: return df
     urls = df["job_url"].tolist()
     descriptions = [""] * len(urls)
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
         future_map = {pool.submit(_fetch_job_desc, u): idx for idx, u in enumerate(urls)}
         for future in as_completed(future_map):
             idx = future_map[future]
