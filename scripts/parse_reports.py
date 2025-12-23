@@ -1,6 +1,7 @@
-from pathlib import Path
-import json
 import hashlib
+import json
+from pathlib import Path
+
 import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -12,7 +13,7 @@ TEXT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def extract_text_pdf(path: Path) -> str:
-    import fitz  # PyMuPDF
+    import fitz
 
     with fitz.open(path) as doc:
         return "\n".join(page.get_text() for page in doc)
@@ -22,7 +23,7 @@ def _load_cache():
     if CACHE_FILE.exists():
         try:
             return json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-        except (ValueError, OSError):
+        except (json.JSONDecodeError, OSError):
             return {}
     return {}
 
@@ -54,10 +55,7 @@ def _load_text_file(filename: str | None) -> str | None:
     path = TEXT_DIR / filename
     if not path.exists():
         return None
-    try:
-        return path.read_text(encoding="utf-8")
-    except OSError:
-        return None
+    return path.read_text(encoding="utf-8")
 
 
 def parse_all_reports(report_dir: Path) -> pd.DataFrame:

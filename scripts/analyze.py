@@ -1,10 +1,13 @@
-import os
-import json
 import itertools
+import json
+import logging
+import os
 from collections import Counter
 
 import pandas as pd
 from wordcloud import WordCloud
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_skill_lists(series: pd.Series):
@@ -57,15 +60,17 @@ def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd
 
         if os.getenv("USE_CLUSTERING", "false").lower() == "true":
             try:
-                from sklearn.feature_extraction.text import TfidfVectorizer
                 from sklearn.cluster import KMeans
+                from sklearn.feature_extraction.text import TfidfVectorizer
 
                 vec = TfidfVectorizer(max_features=2000, ngram_range=(1, 2), min_df=2)
                 X = vec.fit_transform(jobs_df["description"].fillna(""))
                 km = KMeans(n_clusters=3, n_init=10, random_state=42)
                 labels = km.fit_predict(X)
                 out["cluster_counts"] = Counter(labels)
-            except Exception as exc:
+            except ImportError:
+                logger.warning("scikit-learn not installed; skipping clustering")
+            except ValueError as exc:
                 out["cluster_error"] = str(exc)
 
     if reports_df is not None and not reports_df.empty and "skills" in reports_df.columns:

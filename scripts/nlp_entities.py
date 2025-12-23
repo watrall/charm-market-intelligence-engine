@@ -1,12 +1,13 @@
 import re
 from pathlib import Path
+from typing import List, Tuple
 
 import pandas as pd
 import spacy
 
 _nlp = None
 _skills_df_cache: pd.DataFrame | None = None
-_skill_patterns = None
+_skill_patterns: List[Tuple[re.Pattern, str]] | None = None
 
 
 def get_nlp():
@@ -14,8 +15,10 @@ def get_nlp():
     if _nlp is None:
         try:
             _nlp = spacy.load("en_core_web_sm")
-        except OSError as exc:  # pragma: no cover - setup guard
-            raise RuntimeError("Install spaCy model: python -m spacy download en_core_web_sm") from exc
+        except OSError as exc:
+            raise RuntimeError(
+                "spaCy model not found. Run: python -m spacy download en_core_web_sm"
+            ) from exc
     return _nlp
 
 
@@ -36,10 +39,11 @@ def _load_taxonomy(base: Path) -> pd.DataFrame:
     _skills_df_cache = df[["alias", "normalized_skill"]].dropna()
     return _skills_df_cache
 
-def _get_skill_patterns(skills_df: pd.DataFrame):
+def _get_skill_patterns(skills_df: pd.DataFrame) -> List[Tuple[re.Pattern, str]]:
     global _skill_patterns
     if _skill_patterns is not None:
         return _skill_patterns
+
     patterns = []
     for _, row in skills_df.iterrows():
         alias = row["alias"].strip().lower()

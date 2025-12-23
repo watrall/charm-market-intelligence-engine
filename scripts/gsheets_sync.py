@@ -1,5 +1,3 @@
-"""Google Sheets helpers for CHARM."""
-
 from __future__ import annotations
 
 import os
@@ -9,7 +7,6 @@ from pathlib import Path
 import gspread
 import pandas as pd
 from oauth2client.service_account import ServiceAccountCredentials
-
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CACHE_DIR = BASE_DIR / "data" / "cache"
@@ -32,7 +29,6 @@ def _authorize():
 
 
 def connect_sheet():
-    """Public helper for diagnostics/tests."""
     return _authorize()
 
 

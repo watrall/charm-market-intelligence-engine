@@ -1,8 +1,7 @@
-"""Validate job pattern configuration for CHARM."""
-
-from pathlib import Path
 import json
 import re
+import sys
+from pathlib import Path
 
 
 def main():
@@ -11,8 +10,7 @@ def main():
     data = json.loads(cfg_path.read_text(encoding="utf-8"))
     problems = []
 
-    def _compile_entries(entries):
-        local = []
+    def _validate_entries(entries):
         for entry in entries:
             pattern = entry if isinstance(entry, str) else entry.get("pattern")
             if not pattern:
@@ -22,17 +20,15 @@ def main():
                 re.compile(pattern, re.I)
             except re.error as exc:
                 problems.append(f"Invalid regex '{pattern}': {exc}")
-            local.append(pattern)
-        return local
 
     for bucket, entries in data.get("job_type", {}).items():
-        _compile_entries(entries)
+        _validate_entries(entries)
 
     for bucket, entries in data.get("seniority", {}).items():
-        _compile_entries(entries)
+        _validate_entries(entries)
 
     if problems:
-        raise SystemExit("Invalid job pattern config:\n- " + "\n- ".join(problems))
+        sys.exit("Invalid job pattern config:\n- " + "\n- ".join(problems))
     print(f"OK: {cfg_path} patterns compiled successfully.")
 
 

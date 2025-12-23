@@ -1,37 +1,32 @@
-# CHARM Dashboard — Skills × Seniority × Job Type (Folium)
-# Minimal, explicit, and production-minded. No magic.
-
 from __future__ import annotations
 
 import ast
 import json
 import re
 from pathlib import Path
-from datetime import datetime
 
+import folium
 import pandas as pd
 import streamlit as st
-import folium
-from folium.plugins import MarkerCluster, HeatMap
+from folium.plugins import HeatMap, MarkerCluster
 from streamlit_folium import st_folium
 
-# ---------- Config ----------
 st.set_page_config(page_title="CHARM Dashboard", layout="wide")
+
 BASE = Path(__file__).resolve().parents[1]
 DATA_DIR = BASE / "data" / "processed"
 GEO_DIR = BASE / "data" / "geo"
 
-DEFAULT_CENTER = [39.5, -98.35]  # Lower 48 centroid
+DEFAULT_CENTER = [39.5, -98.35]
 DEFAULT_ZOOM = 4
 
-# Colors by seniority (neutral, readable)
 SENIORITY_COLORS = {
     "entry": "#4c78a8",
     "mid": "#72b7b2",
     "senior": "#f58518",
     "lead/PI": "#e45756",
 }
-# Icons by job type (Font Awesome names Folium supports)
+
 JOBTYPE_ICONS = {
     "field-tech": "wrench",
     "lab/analyst": "flask",
@@ -39,7 +34,6 @@ JOBTYPE_ICONS = {
     "pm/pi": "briefcase",
 }
 
-# ---------- Data ----------
 def _coerce_skills(value) -> list[str]:
     if isinstance(value, list):
         return [str(v).strip() for v in value if str(v).strip()]
@@ -98,10 +92,6 @@ def load_jobs() -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False)
 def load_us_states_geojson():
-    """
-    Load a US states GeoJSON if available. Supports common property keys:
-    STUSPS (state code), NAME, GEOID. We match on two-letter state codes when possible.
-    """
     for name in ("us_states_simplified.geojson", "us_states.geojson"):
         fp = GEO_DIR / name
         if fp.exists():

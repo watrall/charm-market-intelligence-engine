@@ -1,18 +1,19 @@
-import os
 import json
+import os
 from pathlib import Path
-from dotenv import load_dotenv
-import pandas as pd
 
-from scripts.scrape_jobs import scrape_sources
-from scripts.data_cleaning import clean_and_dedupe
-from scripts.parse_reports import parse_all_reports
-from scripts.nlp_entities import nlp_enrich
-from scripts.sentiment_salience import add_sentiment_and_terms
-from scripts.geocode import geocode_locations
+import pandas as pd
+from dotenv import load_dotenv
+
 from scripts.analyze import analyze_market, save_wordcloud
-from scripts.insights import generate_insights
+from scripts.data_cleaning import clean_and_dedupe
 from scripts.db import get_conn, init_db, upsert_jobs, upsert_reports
+from scripts.geocode import geocode_locations
+from scripts.insights import generate_insights
+from scripts.nlp_entities import nlp_enrich
+from scripts.parse_reports import parse_all_reports
+from scripts.scrape_jobs import scrape_sources
+from scripts.sentiment_salience import add_sentiment_and_terms
 
 
 def enrich_report_metadata(df: pd.DataFrame | None) -> pd.DataFrame | None:
@@ -62,34 +63,43 @@ def main():
     base = Path(__file__).resolve().parents[1]
     ensure_dirs(base)
 
-    # 1) Scrape
     jobs_df = scrape_sources()
     if jobs_df is None or jobs_df.empty:
-        print("No jobs scraped; continuing with placeholder dataset.")
+        print("No jobs scraped; continuing with empty dataset.")
         jobs_df = pd.DataFrame(columns=[
             "source", "title", "company", "location", "date_posted", "job_url", "description"
         ])
 
-    # 2) Clean + Dedupe
     jobs_df = clean_and_dedupe(jobs_df)
-
-    # 3) Parse reports (PDFs dropped into /reports)
     reports_df = parse_all_reports(base / "reports")
 
-    # 4) NLP enrichment
     jobs_df = nlp_enrich(jobs_df, is_job=True)
     if reports_df is not None and not reports_df.empty:
         reports_df = nlp_enrich(reports_df, is_job=False)
         reports_df = enrich_report_metadata(reports_df)
 
-    # 5) Sentiment
     jobs_df = add_sentiment_and_terms(jobs_df, text_col="description")
-
-    # 6) Geocode
     jobs_df = geocode_locations(jobs_df)
 
-    # 7) Save processed
     proc = base / "data" / "processed"
+    _save_processed_data(jobs_df, reports_df, proc)
+
+    analysis = analyze_market(jobs_df, reports_df)
+    with open(proc / "analysis.json", "w", encoding="utf-8") as f:
+        f.write(analysis.to_json(indent=2))
+    save_wordcloud(jobs_df, out_path=proc / "wordcloud.png")
+
+    insights = generate_insights(jobs_df, reports_df, analysis)
+    with open(proc / "insights.md", "w", encoding="utf-8") as f:
+        f.write(insights)
+
+    _persist_to_sqlite(base, jobs_df, reports_df)
+    _sync_to_google_sheets(jobs_df, reports_df)
+
+    print("CHARM pipeline complete.")
+
+
+def _save_processed_data(jobs_df, reports_df, proc):
     jobs_to_save = jobs_df.copy()
     jobs_to_save["skills_list"] = jobs_to_save["skills"].apply(_skills_to_json)
     jobs_to_save["skills"] = jobs_to_save["skills"].apply(_skills_to_string)
@@ -97,43 +107,36 @@ def main():
     if reports_df is not None and not reports_df.empty:
         reports_df.to_csv(proc / "reports.csv", index=False)
 
-    # 8) Analysis + wordcloud
-    analysis = analyze_market(jobs_df, reports_df)
-    with open(proc / "analysis.json","w",encoding="utf-8") as f:
-        f.write(analysis.to_json(indent=2))
-    save_wordcloud(jobs_df, out_path=proc / "wordcloud.png")
 
-    # 9) Insights (rules + optional LLM)
-    insights = generate_insights(jobs_df, reports_df, analysis)
-    with open(proc / "insights.md","w",encoding="utf-8") as f:
-        f.write(insights)
-
-    # 10) SQLite persistence (recommended)
-    if os.getenv("USE_SQLITE","true").lower() == "true":
-        db_path = base / "data" / "charm.db"
-        conn = get_conn(db_path); init_db(conn)
-        upsert_jobs(conn, jobs_df)
-        if reports_df is not None and not reports_df.empty:
-            upsert_reports(conn, reports_df)
-        print(f"SQLite persisted to {db_path}")
-    else:
+def _persist_to_sqlite(base, jobs_df, reports_df):
+    if os.getenv("USE_SQLITE", "true").lower() != "true":
         print("SQLite disabled via USE_SQLITE=false")
+        return
 
-    # 11) Optional Google Sheets sync
-    if os.getenv("USE_SHEETS","true").lower() == "true":
-        try:
-            from scripts.gsheets_sync import sync_jobs_to_google_sheets, sync_reports_to_google_sheets
+    db_path = base / "data" / "charm.db"
+    conn = get_conn(db_path)
+    init_db(conn)
+    upsert_jobs(conn, jobs_df)
+    if reports_df is not None and not reports_df.empty:
+        upsert_reports(conn, reports_df)
+    print(f"SQLite persisted to {db_path}")
 
-            job_rows = sync_jobs_to_google_sheets(jobs_df)
-            print(f"Google Sheets: appended {job_rows} new job rows.")
 
-            if reports_df is not None and not reports_df.empty:
-                report_rows = sync_reports_to_google_sheets(reports_df)
-                print(f"Google Sheets: appended {report_rows} report rows.")
-        except Exception as e:
-            print(f"Sheets sync skipped: {e}")
+def _sync_to_google_sheets(jobs_df, reports_df):
+    if os.getenv("USE_SHEETS", "true").lower() != "true":
+        return
 
-    print("CHARM slim pipeline complete.")
+    try:
+        from scripts.gsheets_sync import sync_jobs_to_google_sheets, sync_reports_to_google_sheets
+
+        job_rows = sync_jobs_to_google_sheets(jobs_df)
+        print(f"Google Sheets: appended {job_rows} new job rows.")
+
+        if reports_df is not None and not reports_df.empty:
+            report_rows = sync_reports_to_google_sheets(reports_df)
+            print(f"Google Sheets: appended {report_rows} report rows.")
+    except (ImportError, RuntimeError) as e:
+        print(f"Sheets sync skipped: {e}")
 
 if __name__ == "__main__":
     main()

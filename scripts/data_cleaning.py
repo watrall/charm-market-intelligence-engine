@@ -1,6 +1,10 @@
-import hashlib, pandas as pd, re, json
-from typing import Tuple
+import hashlib
+import json
+import re
 from pathlib import Path
+from typing import Tuple
+
+import pandas as pd
 
 _SAL_RE = re.compile(r'(\$|USD\s*)?\s*(\d{2,3}[,\.]?\d{0,3})(?:\s*[-–to]{1,3}\s*(\d{2,3}[,\.]?\d{0,3}))?\s*(?:per\s*(year|yr|hour|hr|annum))?', re.I)
 
@@ -79,14 +83,15 @@ def _load_patterns():
     global _JOB_PATTERNS, _SENIORITY_PATTERNS
     if _JOB_PATTERNS is not None and _SENIORITY_PATTERNS is not None:
         return _JOB_PATTERNS, _SENIORITY_PATTERNS
+
     config_path = Path(__file__).resolve().parents[1] / "config" / "job_patterns.json"
     try:
         with config_path.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
-    except FileNotFoundError as exc:
-        raise FileNotFoundError(f"Missing job pattern config: {config_path}") from exc
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Missing job pattern config: {config_path}")
     except json.JSONDecodeError as exc:
-        raise ValueError(f"Invalid JSON in {config_path}: {exc}") from exc
+        raise ValueError(f"Invalid JSON in {config_path}") from exc
 
     job_patterns = {
         bucket: _compile_entries(entries)
@@ -100,16 +105,20 @@ def _load_patterns():
     return _JOB_PATTERNS, _SENIORITY_PATTERNS
 
 def extract_salary(text: str):
-    if not text: return None, None, None
+    if not text:
+        return None, None, None
     m = _SAL_RE.search(text)
-    if not m: return None, None, None
+    if not m:
+        return None, None, None
+
     cur = "USD" if m.group(1) else None
-    low = m.group(2).replace(',', '')
-    high = m.group(3).replace(',', '') if m.group(3) else None
+    low_str = m.group(2).replace(",", "")
+    high_str = m.group(3).replace(",", "") if m.group(3) else None
+
     try:
-        low = float(low)
-        high = float(high) if high else None
-    except Exception:
+        low = float(low_str)
+        high = float(high_str) if high_str else None
+    except ValueError:
         return None, None, None
     return low, high, cur
 

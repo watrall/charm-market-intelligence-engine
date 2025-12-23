@@ -1,8 +1,10 @@
 import os
-import pandas as pd
-from geopy.geocoders import Nominatim
-from geopy.extra.rate_limiter import RateLimiter
 from pathlib import Path
+
+import pandas as pd
+from geopy.exc import GeocoderServiceError, GeocoderTimedOut
+from geopy.extra.rate_limiter import RateLimiter
+from geopy.geocoders import Nominatim
 
 
 def _load_cache(path: Path) -> pd.DataFrame:
@@ -10,7 +12,7 @@ def _load_cache(path: Path) -> pd.DataFrame:
         return pd.DataFrame(columns=["location", "lat", "lon"])
     try:
         return pd.read_csv(path)
-    except Exception:
+    except (pd.errors.EmptyDataError, OSError):
         return pd.DataFrame(columns=["location", "lat", "lon"])
 
 
@@ -37,7 +39,7 @@ def geocode_locations(df: pd.DataFrame) -> pd.DataFrame:
             result = geocode(loc)
             lat = result.latitude if result else None
             lon = result.longitude if result else None
-        except Exception:
+        except (GeocoderServiceError, GeocoderTimedOut):
             lat = lon = None
         known[loc] = (lat, lon)
         new_entries.append({"location": loc, "lat": lat, "lon": lon})

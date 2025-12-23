@@ -1,15 +1,12 @@
-"""Generate narrative insights for CHARM outputs."""
-
 from __future__ import annotations
 
+import os
 from datetime import date
 from pathlib import Path
 from typing import Iterable, List, Sequence, Tuple
-import os
 
 import pandas as pd
 import requests
-
 
 TopSkill = Tuple[str, int]
 
@@ -124,8 +121,6 @@ def generate_insights(
     reports_df: pd.DataFrame,
     analysis: pd.Series | dict,
 ) -> str:
-    """Create the Markdown insights artifact used by the dashboard + notifications."""
-
     analysis_dict = analysis.to_dict() if hasattr(analysis, "to_dict") else dict(analysis)
     top_skills = _normalize_top_skills(analysis_dict.get("top_skills", []))
 

@@ -1,11 +1,10 @@
-    # ---- Config ----
-    PY := .venv/bin/python
-    PIP := .venv/bin/pip
-    STREAMLIT := .venv/bin/streamlit
+# CHARM Market Intelligence Engine
 
-    SHELL := /bin/bash
+PY := .venv/bin/python
+PIP := .venv/bin/pip
+STREAMLIT := .venv/bin/streamlit
+SHELL := /bin/bash
 
-    # ---- Meta ----
 .PHONY: help setup venv install run dash sheets-test prompt clean reset-db lint validate-patterns
 
 help:
@@ -20,27 +19,25 @@ help:
 	@echo "  make reset-db     Delete SQLite DB (keeps processed CSVs)"
 	@echo "  make lint         Basic style checks (optional)"
 
-    # ---- Environment ----
-    venv:
+venv:
 	@test -d .venv || python -m venv .venv
 	@$(PIP) install --upgrade pip
 
-    install: venv
+install: venv
 	@$(PIP) install -r requirements.txt
 	@$(PY) -m spacy download en_core_web_sm || true
 	@$(PY) -c "import nltk; nltk.download('vader_lexicon')" || true
 
-    setup: install
+setup: install
 	@echo "Environment ready."
 
-    # ---- Main actions ----
-    run:
+run:
 	@$(PY) scripts/pipeline.py
 
-    dash:
+dash:
 	@$(STREAMLIT) run dashboard/app.py
 
-    sheets-test:
+sheets-test:
 	@$(PY) scripts/gsheets_test.py
 
 prompt:
@@ -49,16 +46,15 @@ prompt:
 validate-patterns:
 	@$(PY) scripts/validate_patterns.py
 
-    # ---- Maintenance ----
-    clean:
+clean:
 	@find . -name "__pycache__" -type d -prune -exec rm -rf {} +
 	@find . -name "*.pyc" -delete
 	@echo "Cleaned caches."
 
-    reset-db:
+reset-db:
 	@rm -f data/charm.db
 	@echo "Removed data/charm.db"
 
-    lint:
+lint:
 	@echo "Note: add flake8/black/isort to requirements if you want stricter checks."
 	@echo "No linters configured yet."
