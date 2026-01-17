@@ -37,7 +37,7 @@ venv:
 
 install: venv
 	@$(PIP) install -r requirements.txt --quiet
-	@$(PY) -m spacy download en_core_web_sm --quiet 2>/dev/null || true
+	@$(PY) -m spacy download en_core_web_sm 2>/dev/null || true
 	@$(PY) -c "import nltk; nltk.download('vader_lexicon', quiet=True)" 2>/dev/null || true
 
 install-dev: install
