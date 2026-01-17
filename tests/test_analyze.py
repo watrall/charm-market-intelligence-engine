@@ -6,14 +6,14 @@ correctly-structured outputs.
 """
 
 import json
-import pandas as pd
-import pytest
-
 import sys
 from pathlib import Path
+
+import pandas as pd
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from scripts.analyze import analyze_market, _ensure_skill_lists
+from scripts.analyze import _ensure_skill_lists, analyze_market
 
 
 class TestEnsureSkillLists:
@@ -58,10 +58,10 @@ class TestAnalyzeMarket:
     def test_returns_expected_keys(self, sample_jobs_with_skills):
         """Output should contain all expected keys."""
         result = analyze_market(sample_jobs_with_skills, None)
-        
+
         expected_keys = [
             "num_jobs",
-            "unique_employers", 
+            "unique_employers",
             "top_skills",
             "geocoded",
             "report_skills",
@@ -84,17 +84,17 @@ class TestAnalyzeMarket:
     def test_aggregates_skills(self, sample_jobs_with_skills):
         """Should aggregate and count skills across all jobs."""
         result = analyze_market(sample_jobs_with_skills, None)
-        
+
         top_skills = result["top_skills"]
         skill_dict = dict(top_skills)
-        
+
         # Section 106 appears in both jobs
         assert skill_dict.get("Section 106") == 2
 
     def test_handles_empty_dataframe(self, empty_jobs_df):
         """Should handle empty input gracefully."""
         result = analyze_market(empty_jobs_df, None)
-        
+
         assert result["num_jobs"] == 0
         assert result["unique_employers"] == 0
         assert result["top_skills"] == []
@@ -107,20 +107,20 @@ class TestAnalyzeMarket:
     def test_output_is_serializable(self, sample_jobs_with_skills):
         """Output should be JSON-serializable."""
         result = analyze_market(sample_jobs_with_skills, None)
-        
+
         # Convert to JSON and back
         json_str = result.to_json()
         parsed = json.loads(json_str)
-        
+
         assert parsed["num_jobs"] == 2
 
     def test_top_skills_ordered_by_frequency(self, sample_jobs_with_skills):
         """Skills should be sorted by count descending."""
         result = analyze_market(sample_jobs_with_skills, None)
-        
+
         top_skills = result["top_skills"]
         counts = [count for _, count in top_skills]
-        
+
         # Should be in descending order
         assert counts == sorted(counts, reverse=True)
 
@@ -128,7 +128,7 @@ class TestAnalyzeMarket:
         """Same input should produce same output (except timestamp)."""
         result1 = analyze_market(sample_jobs_with_skills.copy(), None)
         result2 = analyze_market(sample_jobs_with_skills.copy(), None)
-        
+
         # Compare everything except timestamp
         assert result1["num_jobs"] == result2["num_jobs"]
         assert result1["top_skills"] == result2["top_skills"]

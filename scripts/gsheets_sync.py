@@ -80,7 +80,7 @@ def _normalize_skills(value) -> str:
 def _load_cached_ids(path: Path) -> set[str]:
     if not path.exists():
         return set()
-    return set(line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+    return {line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()}
 
 
 def _persist_cached_ids(path: Path, values: set[str]):

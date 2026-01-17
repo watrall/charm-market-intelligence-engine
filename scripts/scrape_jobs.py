@@ -28,7 +28,7 @@ _DESC_CACHE_DIRTY = False
 
 
 def _load_desc_cache():
-    \"\"\"Load description cache with safe JSON deserialization.\"\"\"
+    """Load description cache with safe JSON deserialization."""
     global _DESC_CACHE
     if _DESC_CACHE is not None:
         return _DESC_CACHE
@@ -265,7 +265,7 @@ def _fetch_job_desc(url):
         cache[url] = snippet
         _DESC_CACHE_DIRTY = True
         return snippet
-    except (requests.RequestException, OSError) as exc:
+    except (requests.RequestException, OSError):
         cache[url] = ""
         _DESC_CACHE_DIRTY = True
         return ""
@@ -283,7 +283,8 @@ def scrape_sources():
         except Exception as e:
             print(f"Scrape failed for {base}: {e}")
     df = pd.DataFrame(rows)
-    if df.empty: return df
+    if df.empty:
+        return df
     urls = df["job_url"].tolist()
     descriptions = [""] * len(urls)
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:

@@ -60,7 +60,7 @@ def sample_jobs_with_skills() -> pd.DataFrame:
             "skills": ["ArcGIS", "Section 106", "OSHA 10"],
         },
         {
-            "source": "AAA", 
+            "source": "AAA",
             "title": "Senior Archaeologist",
             "company": "CRC",
             "location": "Denver, CO",

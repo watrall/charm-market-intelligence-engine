@@ -2,7 +2,6 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Tuple
 
 import pandas as pd
 
@@ -89,7 +88,7 @@ def _load_patterns():
         with config_path.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
     except FileNotFoundError:
-        raise FileNotFoundError(f"Missing job pattern config: {config_path}")
+        raise FileNotFoundError(f"Missing job pattern config: {config_path}") from None
     except json.JSONDecodeError as exc:
         raise ValueError(f"Invalid JSON in {config_path}") from exc
 
@@ -126,7 +125,7 @@ def _hash_row(title, company, description):
     s = f"{(title or '').strip().lower()}|{(company or '').strip().lower()}|{(description or '')[:280].strip().lower()}"
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
-def _parse_city_state(loc: str) -> Tuple[str, str]:
+def _parse_city_state(loc: str) -> tuple[str, str]:
     if not loc:
         return "", ""
     cleaned = re.sub(r"\s+", " ", loc)

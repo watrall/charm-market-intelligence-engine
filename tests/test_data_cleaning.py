@@ -5,19 +5,19 @@ These tests verify that the cleaning and deduplication logic works correctly
 without requiring external services.
 """
 
-import pandas as pd
-import pytest
-
 # Import the functions we're testing
 import sys
 from pathlib import Path
+
+import pandas as pd
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.data_cleaning import (
-    extract_salary,
     _hash_row,
     _parse_city_state,
     clean_and_dedupe,
+    extract_salary,
 )
 
 
@@ -114,14 +114,14 @@ class TestCleanAndDedupe:
         # Add a duplicate URL
         df = pd.concat([sample_jobs_df, sample_jobs_df.iloc[[0]]], ignore_index=True)
         assert len(df) == 4  # 3 original + 1 duplicate
-        
+
         cleaned = clean_and_dedupe(df)
         assert len(cleaned) == 3  # Duplicate removed
 
     def test_adds_expected_columns(self, sample_jobs_df):
         """Should add city, state, job_type, seniority columns."""
         cleaned = clean_and_dedupe(sample_jobs_df)
-        
+
         expected_columns = ["city", "state", "job_type", "seniority", "url"]
         for col in expected_columns:
             assert col in cleaned.columns, f"Missing column: {col}"
@@ -129,10 +129,10 @@ class TestCleanAndDedupe:
     def test_extracts_salary_fields(self, sample_jobs_df):
         """Should extract salary_min and salary_max."""
         cleaned = clean_and_dedupe(sample_jobs_df)
-        
+
         assert "salary_min" in cleaned.columns
         assert "salary_max" in cleaned.columns
-        
+
         # The third job has salary info
         job_with_salary = cleaned[cleaned["title"] == "Project Manager"].iloc[0]
         assert job_with_salary["salary_min"] == 65000.0
@@ -147,5 +147,5 @@ class TestCleanAndDedupe:
         """Column order should be consistent across runs."""
         cleaned1 = clean_and_dedupe(sample_jobs_df.copy())
         cleaned2 = clean_and_dedupe(sample_jobs_df.copy())
-        
+
         assert list(cleaned1.columns) == list(cleaned2.columns)

@@ -21,10 +21,10 @@ def main():
             except re.error as exc:
                 problems.append(f"Invalid regex '{pattern}': {exc}")
 
-    for bucket, entries in data.get("job_type", {}).items():
+    for _bucket, entries in data.get("job_type", {}).items():
         _validate_entries(entries)
 
-    for bucket, entries in data.get("seniority", {}).items():
+    for _bucket, entries in data.get("seniority", {}).items():
         _validate_entries(entries)
 
     if problems:

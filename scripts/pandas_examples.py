@@ -1,6 +1,9 @@
 from __future__ import annotations
-import os, re, sqlite3
+
+import re
+import sqlite3
 from pathlib import Path
+
 import pandas as pd
 
 BASE = Path(__file__).resolve().parents[1]
@@ -54,7 +57,8 @@ def monthly_postings(df: pd.DataFrame) -> pd.DataFrame:
 _STATE_RE = re.compile(r"\b([A-Z]{2})\b\s*$")
 def jobs_by_state(df: pd.DataFrame) -> pd.DataFrame:
     def state_of(loc: str) -> str:
-        if not isinstance(loc, str): return ""
+        if not isinstance(loc, str):
+            return ""
         m = _STATE_RE.search(loc.strip())
         return m.group(1) if m else ""
     d = df.copy()

@@ -20,7 +20,7 @@ def extract_text_pdf(path: Path) -> str:
 
 
 def _load_cache():
-    \"\"\"Load report cache with safe JSON deserialization.\"\"\"
+    """Load report cache with safe JSON deserialization."""
     if CACHE_FILE.exists():
         try:
             raw = CACHE_FILE.read_text(encoding="utf-8")

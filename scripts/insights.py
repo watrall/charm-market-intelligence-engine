@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable, Sequence
 from datetime import date
 from pathlib import Path
-from typing import Iterable, List, Sequence, Tuple
 
 import pandas as pd
 import requests
 
-TopSkill = Tuple[str, int]
+TopSkill = tuple[str, int]
 
 
-def _normalize_top_skills(values: Iterable[Sequence]) -> List[TopSkill]:
-    normalized: List[TopSkill] = []
+def _normalize_top_skills(values: Iterable[Sequence]) -> list[TopSkill]:
+    normalized: list[TopSkill] = []
     for item in values or []:
         if isinstance(item, (list, tuple)) and len(item) >= 2:
             skill = str(item[0])
@@ -24,7 +24,7 @@ def _normalize_top_skills(values: Iterable[Sequence]) -> List[TopSkill]:
     return normalized
 
 
-def _rules(top_skills_counts: List[TopSkill], limit: int = 12) -> str:
+def _rules(top_skills_counts: list[TopSkill], limit: int = 12) -> str:
     lines = ["## Program Recommendations"]
     mapping = {
         "ArcGIS": ["certificate", "microlearning", "undergrad"],
@@ -132,7 +132,7 @@ def generate_insights(
     analysis_dict = analysis.to_dict() if hasattr(analysis, "to_dict") else dict(analysis)
     top_skills = _normalize_top_skills(analysis_dict.get("top_skills", []))
 
-    lines: List[str] = ["# CHARM Market Insights", ""]
+    lines: list[str] = ["# CHARM Market Insights", ""]
     lines.append(f"- Total job postings: **{analysis_dict.get('num_jobs', 0)}**")
     lines.append(f"- Unique employers: **{analysis_dict.get('unique_employers', 0)}**")
     lines.append(f"- Geocoded postings: **{analysis_dict.get('geocoded', 0)}**\n")

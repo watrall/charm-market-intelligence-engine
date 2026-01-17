@@ -8,7 +8,7 @@ from geopy.geocoders import Nominatim
 
 
 def _load_cache(path: Path) -> pd.DataFrame:
-    \"\"\"Load geocache with validation.\"\"\"
+    """Load geocache with validation."""
     if not path.exists():
         return pd.DataFrame(columns=["location", "lat", "lon"])
     try:

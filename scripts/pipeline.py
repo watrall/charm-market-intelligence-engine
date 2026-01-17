@@ -117,11 +117,11 @@ def _save_processed_data(jobs_df, reports_df, proc):
     jobs_to_save = jobs_df.copy()
     jobs_to_save["skills_list"] = jobs_to_save["skills"].apply(_skills_to_json)
     jobs_to_save["skills"] = jobs_to_save["skills"].apply(_skills_to_string)
-    
+
     # Ensure stable column order (only include columns that exist)
     job_cols = [c for c in JOBS_CSV_COLUMNS if c in jobs_to_save.columns]
     jobs_to_save[job_cols].to_csv(proc / "jobs.csv", index=False)
-    
+
     if reports_df is not None and not reports_df.empty:
         report_cols = [c for c in REPORTS_CSV_COLUMNS if c in reports_df.columns]
         reports_df[report_cols].to_csv(proc / "reports.csv", index=False)

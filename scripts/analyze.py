@@ -42,11 +42,11 @@ def _ensure_skill_lists(series: pd.Series):
 
 def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd.Series:
     """Analyze job market data and return summary statistics.
-    
+
     Output is deterministic given the same input data (except for run_timestamp).
     """
     jobs_df = jobs_df if jobs_df is not None else pd.DataFrame()
-    
+
     # Ordered dict ensures consistent JSON key ordering
     out = {
         "schema_version": SCHEMA_VERSION,
@@ -97,17 +97,17 @@ def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd
 
 def save_wordcloud(jobs_df: pd.DataFrame, out_path):
     """Generate word cloud from job descriptions.
-    
+
     Uses seeded random for reproducible layout.
     """
     texts = jobs_df["description"].fillna("").tolist()
     joined = " ".join(texts)
     if not joined.strip():
         return
-    
+
     seed = _get_seed()
     random.seed(seed)
-    
+
     wc = WordCloud(
         width=1400,
         height=800,

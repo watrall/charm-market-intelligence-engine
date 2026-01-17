@@ -19,8 +19,9 @@ def _ensure_vader():
         nltk.download("vader_lexicon", quiet=True)
     return SentimentIntensityAnalyzer()
 
-def add_sentiment_and_terms(df: pd.DataFrame, text_col:str):
-    if df is None or df.empty: return df
+def add_sentiment_and_terms(df: pd.DataFrame, text_col: str):
+    if df is None or df.empty:
+        return df
     sia = _ensure_vader()
     sentiments = []
     for txt in df[text_col].fillna("").tolist():

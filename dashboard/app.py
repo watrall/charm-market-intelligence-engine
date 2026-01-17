@@ -266,7 +266,7 @@ def draw_choropleth(df: pd.DataFrame, selected_skills: list[str]):
         for _, r in tbl.iterrows():
             d[str(r["state"]).upper()] = int(r["count"])
         return d
-    state_count = _state_map()
+    _state_map()  # Validate data but don't store unused result
 
     folium.GeoJson(
         gjson,
@@ -286,11 +286,7 @@ def draw_choropleth(df: pd.DataFrame, selected_skills: list[str]):
         )
     ).add_to(m)
 
-    # Add counts as markers (optional, readable)
-    for _, r in tbl.iterrows():
-        # We'll place a label at approximate state centroid using bounds (kept simple)
-        # For a small, robust implementation, we skip dynamic centroids to avoid heavy deps.
-        pass  # Intentionally minimal; choropleth color carries the message.
+    # Choropleth color carries the count information; no additional markers needed
 
     folium.LayerControl(collapsed=True).add_to(m)
     return m
