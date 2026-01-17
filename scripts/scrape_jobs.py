@@ -23,11 +23,11 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 CACHE_DIR = BASE_DIR / "data" / "cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DESC_CACHE_PATH = CACHE_DIR / "job_descriptions.json"
-_DESC_CACHE = None
+_DESC_CACHE: dict[str, str] | None = None
 _DESC_CACHE_DIRTY = False
 
 
-def _load_desc_cache():
+def _load_desc_cache() -> dict[str, str]:
     """Load description cache with safe JSON deserialization."""
     global _DESC_CACHE
     if _DESC_CACHE is not None:

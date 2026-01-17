@@ -54,13 +54,11 @@ def _llm_call(prompt: str) -> str:
         if provider in {"openai", "openai_compat"} and os.getenv("OPENAI_API_KEY"):
             from openai import OpenAI
 
-            client_kwargs = {}
+            base_url = ""
             if provider == "openai_compat":
                 base_url = os.getenv("LLM_BASE_URL", "").strip()
-                if base_url:
-                    client_kwargs["base_url"] = base_url
-            client = OpenAI(**client_kwargs)
-            response = client.chat.completions.create(
+            client = OpenAI(base_url=base_url) if base_url else OpenAI()
+            client_response = client.chat.completions.create(
                 model=model,
                 messages=[
                     {
@@ -72,7 +70,7 @@ def _llm_call(prompt: str) -> str:
                 temperature=0.2,
                 max_tokens=max_tokens,
             )
-            return response.choices[0].message.content or ""
+            return client_response.choices[0].message.content or ""
 
         if provider == "ollama":
             base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
@@ -84,13 +82,16 @@ def _llm_call(prompt: str) -> str:
                 return "(Ollama URL must be localhost for security)"
             if parsed.scheme not in ("http", "https"):
                 return "(Ollama URL must use http or https)"
-            response = requests.post(
+            http_response = requests.post(
                 f"{base}/api/generate",
                 json={"model": model, "prompt": prompt, "stream": False},
                 timeout=120,
             )
-            response.raise_for_status()
-            return response.json().get("response", "")
+            http_response.raise_for_status()
+            payload = http_response.json()
+            if isinstance(payload, dict):
+                return str(payload.get("response", ""))
+            return ""
     except Exception as exc:
         return f"(LLM call failed) {type(exc).__name__}"
 

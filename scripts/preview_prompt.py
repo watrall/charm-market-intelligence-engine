@@ -16,7 +16,8 @@ def main():
 
     jobs = pd.read_csv(proc)
     analysis = analyze_market(jobs, None)
-    prompt = _render_prompt(analysis)
+    analysis_dict = analysis.to_dict() if hasattr(analysis, "to_dict") else dict(analysis)
+    prompt = _render_prompt(analysis_dict)
     print("\n=== Rendered Insight Prompt ===\n")
     print(prompt)
 

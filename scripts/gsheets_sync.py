@@ -180,7 +180,7 @@ def sync_reports_to_google_sheets(reports_df: pd.DataFrame) -> int:
         ws.append_rows(chunk, value_input_option="RAW")
         appended += len(chunk)
     if appended:
-        new_ids = {row[0] for row in new_rows if row and row[0]}
+        new_ids = {str(row[0]) for row in new_rows if row and row[0]}
         existing.update(new_ids)
         _persist_cached_ids(cache_path, existing)
     return appended

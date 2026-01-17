@@ -92,8 +92,8 @@ def nlp_enrich(df: pd.DataFrame, is_job: bool) -> pd.DataFrame:
         places.append([e.text for e in doc.ents if e.label_ in ("GPE", "LOC")])
         skills_col.append(_match_skills(txt, skills_df))
 
-    df["entities"] = ents_list
-    df["orgs"] = orgs
-    df["places"] = places
-    df["skills"] = skills_col
+    df["entities"] = pd.Series(ents_list, index=df.index, dtype="object")
+    df["orgs"] = pd.Series(orgs, index=df.index, dtype="object")
+    df["places"] = pd.Series(places, index=df.index, dtype="object")
+    df["skills"] = pd.Series(skills_col, index=df.index, dtype="object")
     return df

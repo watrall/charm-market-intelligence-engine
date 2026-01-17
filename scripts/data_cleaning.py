@@ -1,6 +1,7 @@
 import hashlib
 import json
 import re
+from collections.abc import Sequence
 from pathlib import Path
 
 import pandas as pd
@@ -62,11 +63,11 @@ US_STATE_MAP = {
 }
 STATE_NAME_TO_ABBR = {name.lower(): abbr for abbr, name in US_STATE_MAP.items()}
 
-_JOB_PATTERNS = None
-_SENIORITY_PATTERNS = None
+_JOB_PATTERNS: dict[str, re.Pattern[str]] | None = None
+_SENIORITY_PATTERNS: list[tuple[str, re.Pattern[str]]] | None = None
 
 
-def _compile_entries(entries):
+def _compile_entries(entries: Sequence[object]) -> re.Pattern[str]:
     compiled = []
     for entry in entries:
         pattern = entry
@@ -78,7 +79,7 @@ def _compile_entries(entries):
     return re.compile("|".join(compiled), re.I) if compiled else re.compile(r"(?!x)")
 
 
-def _load_patterns():
+def _load_patterns() -> tuple[dict[str, re.Pattern[str]], list[tuple[str, re.Pattern[str]]]]:
     global _JOB_PATTERNS, _SENIORITY_PATTERNS
     if _JOB_PATTERNS is not None and _SENIORITY_PATTERNS is not None:
         return _JOB_PATTERNS, _SENIORITY_PATTERNS
@@ -93,17 +94,17 @@ def _load_patterns():
         raise ValueError(f"Invalid JSON in {config_path}") from exc
 
     job_patterns = {
-        bucket: _compile_entries(entries)
+        str(bucket): _compile_entries(entries)
         for bucket, entries in data.get("job_type", {}).items()
     }
     seniority_patterns = [
-        (bucket, _compile_entries(entries))
+        (str(bucket), _compile_entries(entries))
         for bucket, entries in data.get("seniority", {}).items()
     ]
     _JOB_PATTERNS, _SENIORITY_PATTERNS = job_patterns, seniority_patterns
     return _JOB_PATTERNS, _SENIORITY_PATTERNS
 
-def extract_salary(text: str):
+def extract_salary(text: str) -> tuple[float | None, float | None, str | None]:
     if not text:
         return None, None, None
     m = _SAL_RE.search(text)

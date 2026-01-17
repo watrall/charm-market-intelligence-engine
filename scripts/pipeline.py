@@ -16,8 +16,8 @@ from scripts.scrape_jobs import scrape_sources
 from scripts.sentiment_salience import add_sentiment_and_terms
 
 
-def enrich_report_metadata(df: pd.DataFrame | None) -> pd.DataFrame | None:
-    if df is None or df.empty:
+def enrich_report_metadata(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
         return df
     df = df.copy()
     df["word_count"] = df["text"].fillna("").astype(str).apply(lambda t: len(t.split()))

@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import date, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -65,7 +66,7 @@ def init_db(conn):
 def _clean_record(value):
     if pd.isna(value):
         return None
-    if isinstance(value, (pd.Timestamp, pd.DatetimeTZDtype)):
+    if isinstance(value, (pd.Timestamp, datetime, date)):
         return value.isoformat()
     if hasattr(value, "isoformat"):
         return value.isoformat()

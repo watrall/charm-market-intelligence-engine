@@ -4,6 +4,8 @@ This is a clean, runnable reference implementation for automated market analysis
 
 CHARM = Cultural Heritage & Archaeological Resource Management
 
+The point of CHARM is to guide the investment of resources and the development of undergraduate, graduate, and non-degree/professioal programs and curricula, including courses, micro-degrees, and professional certificates. While it was built with cultural heritage and archaeology in mind, the pipeline is intentionally modular and can be adapted to other disciplines with minimal changes.
+
 **Outcomes:** scrape job postings (American Anthropological Association & American Cultural Resources Association) → clean/dedupe → parse uploaded PDFs (industry reports) → spaCy Natural Language Processing (entity + skill extraction) → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
 
 ## Quick Start
