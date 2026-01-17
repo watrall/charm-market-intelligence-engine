@@ -60,7 +60,7 @@ jobs:
 
       - name: Type check with mypy
         run: |
-          mypy scripts/ --ignore-missing-imports
+          mypy --explicit-package-bases scripts/ --ignore-missing-imports
 
       - name: Run tests
         run: |

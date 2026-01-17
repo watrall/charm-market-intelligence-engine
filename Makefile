@@ -65,7 +65,7 @@ lint:
 	@$(PY) -m ruff check scripts/ dashboard/ tests/ --fix
 
 typecheck:
-	@$(PY) -m mypy scripts/ --ignore-missing-imports
+	@$(PY) -m mypy --explicit-package-bases scripts/ --ignore-missing-imports
 
 test:
 	@$(PY) -m pytest tests/ -v --tb=short
