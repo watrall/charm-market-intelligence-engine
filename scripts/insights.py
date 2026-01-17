@@ -52,7 +52,7 @@ def _llm_call(prompt: str) -> str:
 
     try:
         if provider in {"openai", "openai_compat"} and os.getenv("OPENAI_API_KEY"):
-            from openai import OpenAI  # lazy import so dependency stays optional
+            from openai import OpenAI
 
             client_kwargs = {}
             if provider == "openai_compat":
@@ -76,6 +76,12 @@ def _llm_call(prompt: str) -> str:
 
         if provider == "ollama":
             base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+            # Basic SSRF protection: only allow localhost/127.0.0.1 for Ollama
+            from urllib.parse import urlparse
+            parsed = urlparse(base)
+            allowed_hosts = {"localhost", "127.0.0.1", "::1"}
+            if parsed.hostname not in allowed_hosts:
+                return "(Ollama URL must be localhost for security)"
             response = requests.post(
                 f"{base}/api/generate",
                 json={"model": model, "prompt": prompt, "stream": False},
@@ -83,8 +89,8 @@ def _llm_call(prompt: str) -> str:
             )
             response.raise_for_status()
             return response.json().get("response", "")
-    except Exception as exc:  # pragma: no cover - defensive logging only
-        return f"(LLM failed, falling back) {exc}"
+    except Exception as exc:
+        return f"(LLM call failed) {type(exc).__name__}"
 
     return ""
 

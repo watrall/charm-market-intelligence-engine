@@ -2,7 +2,7 @@
 
 This is a clean, runnable reference implementation for automated market analysis in the cultural resource & heritage management space (designed originally to be hosted and run on a local Synology NAS).
 
-CHARM = Cultural Heritage & Archaeologcial Resource Management
+CHARM = Cultural Heritage & Archaeological Resource Management
 
 **Outcomes:** scrape job postings (American Anthropological Association & American Cultural Resources Association) → clean/dedupe → parse uploaded PDFs (industry reports) → spaCy Natural Language Processing (entity + skill extraction) → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
 
@@ -29,7 +29,7 @@ streamlit run dashboard/app.py
 The sample `config/.env.example` uses **explicit placeholders** anywhere a key/ID/secret is needed. Replace these with real values:
 
 - `GOOGLE_SERVICE_ACCOUNT_FILE=ENTER_PATH_TO_SERVICE_ACCOUNT_JSON_HERE`
-  - Path to your service account key file (e.g., `secrets/service_account.json`).
+  - Path to your service account key file (like `secrets/service_account.json`).
 - `GOOGLE_SHEET_ID=ENTER_GOOGLE_SHEET_ID_HERE`
   - The ID from your Sheet URL.
 - `OPENAI_API_KEY=ENTER_OPENAI_API_KEY_HERE`
@@ -196,7 +196,7 @@ How it works:
 - **Politeness:** configurable rate limiting + polite User-Agent (see `SCRAPER_MAX_WORKERS` / `SCRAPER_REQUEST_INTERVAL` in `.env`). For example, the defaults (~4 workers, 0.8 s interval) average ~5 detail fetches/sec; lower these values if the target site throttles faster.
 - **Job-description caching:** fetched detail pages are stored in `data/cache/job_descriptions.json` so reruns avoid hammering the same postings. Adjust worker count/interval in `.env` to tune throughput.
 - **Dedupe:** by `job_url` and content hash to avoid churn and inflated counts.
-- **Respect sites:** review **robots.txt** (the crawl-policy file published by each site) and Terms of Service; scale cautiously and cache where possible.
+- **Respect sites:** check each site's **robots.txt** and Terms of Service before scraping; scale cautiously and cache aggressively.
 - **No PII:** the pipeline collects job-level, non-personal data only; avoid ingesting personally identifiable information (PII).
 
 
@@ -269,14 +269,12 @@ This pipeline supports two classes of LLM backends:
 **Recommendation:** For a Synology/NAS demo, Ollama is the fastest path to a working self-host. For higher throughput or larger prompts, deploy **vLLM** with an OpenAI-compatible endpoint and switch to `LLM_PROVIDER=openai_compat`.
 
 ### Why offer both (OpenAI + Ollama)
-Using **both** a commercial cloud model and a self‑hosted local model is intentional:
+Supporting both cloud and local LLMs is practical:
 
-- **Reliability & failover**: If the cloud key hits a rate limit or there’s an outage, the pipeline can still produce insights with a local model.
-- **Cost control**: Cloud LLMs are convenient but metered. A local runner limits variable cost while preserving functionality for routine runs.
-- **Data governance**: Some organizations prefer keeping text artifacts on‑prem. A local model reduces external exposure and aids compliance reviews.
-- **Portability for reviewers**: Anyone can clone the repo and enable insights with Ollama—even without a paid key—making the demo reproducible.
-- **Performance trade‑offs**: Cloud models usually have stronger quality; local models are good enough for structured, well‑scoped prompts like our insight brief.
-- **Demonstrates architecture skill**: The same pipeline supports multiple providers behind a stable interface, which is exactly what “agentic”/API‑driven workflows require.
+- **Cost control**: Cloud models are metered. Ollama lets you run unlimited local inferences at no extra cost.
+- **Data governance**: Some orgs want text to stay on-prem. A local model keeps everything in your infrastructure.
+- **Portability**: Anyone can clone this repo and get working insights with Ollama—no API key required.
+- **Failover**: If your cloud quota runs out or there's an outage, the local model keeps the pipeline functional.
 
 ## Components & responsibilities (what each piece does)
 
@@ -342,7 +340,7 @@ This repository is organized so a reviewer can read it top‑down and understand
 Everything is idempotent: duplicates are filtered, pagination is capped, geocoding is cached, and runs can be scheduled safely.
 
 ## Cost & usage planning
-- **LLM calls (optional):** The default insight prompt is ~450 output tokens. With `LLM_MAX_TOKENS=1200`, each run on `gpt-4o-mini` (currently ~$0.60 per 1K output tokens) costs roughly $0.30–$0.70 depending on completion length. Lower that ceiling or switch `USE_LLM=false` for cost-free runs. If you run hourly, document how many runs you expect per month and multiply by that per-call estimate to create a budget window.
+- **LLM calls (optional):** Each pipeline run with `gpt-4o-mini` costs well under $1 (usually a few cents). The default prompt and response fit comfortably within 1200 tokens. Set `USE_LLM=false` for completely free runs. If you're running this on a schedule, estimate your monthly call volume and budget accordingly.
 - **Google Sheets sync (optional):** Setting `USE_SHEETS=true` turns on both Sheets and Drive APIs. They are metered after the free tier, and every run makes a few dozen append/read calls. Leave it `false` until you create a GCP project, confirm quotas, and budget for increased throughput (e.g., batch jobs nightly instead of per-scrape).
 - **Geocoding:** The built-in Nominatim client is free but rate-limited to 1 request/sec; heavy usage may require hosting your own instance. Because geocoding is cached in `data/geocache.csv`, reruns stay cost-free unless you clear the cache.
 - **Storage/dashboards:** Streamlit + SQLite incur no extra spend—everything runs locally. When deploying to cloud infrastructure, include VM/storage costs in your overall estimate.

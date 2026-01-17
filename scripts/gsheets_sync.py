@@ -6,7 +6,7 @@ from pathlib import Path
 
 import gspread
 import pandas as pd
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CACHE_DIR = BASE_DIR / "data" / "cache"
@@ -19,11 +19,16 @@ def _authorize():
     if not (service_account and sheet_id):
         raise RuntimeError("Sheets env not configured")
 
-    scope = [
+    # Validate service account path to prevent path traversal
+    sa_path = Path(service_account).resolve()
+    if not sa_path.is_file() or not str(sa_path).endswith(".json"):
+        raise RuntimeError(f"Invalid service account file: {service_account}")
+
+    scopes = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive",
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(service_account, scope)
+    creds = Credentials.from_service_account_file(str(sa_path), scopes=scopes)
     client = gspread.authorize(creds)
     return client.open_by_key(sheet_id)
 

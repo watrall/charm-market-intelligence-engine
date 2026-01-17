@@ -1,1 +1,45 @@
+# OS artifacts
 .DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+
+# Environment and secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+service_account*.json
+*credentials*.json
+
+# Data and caches
+data/
+reports/*.pdf
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
+logs/

@@ -60,6 +60,7 @@ def _load_text_file(filename: str | None) -> str | None:
 
 def parse_all_reports(report_dir: Path) -> pd.DataFrame:
     report_dir.mkdir(exist_ok=True, parents=True)
+    report_dir_resolved = report_dir.resolve()
     cache = _load_cache()
     dirty = False
     rows = []
@@ -68,8 +69,16 @@ def parse_all_reports(report_dir: Path) -> pd.DataFrame:
     for p in report_dir.iterdir():
         if p.suffix.lower() != ".pdf":
             continue
-        seen_files.add(str(p.resolve()))
-        key = str(p.resolve())
+        # Security: skip symlinks and ensure file is within report_dir
+        if p.is_symlink():
+            print(f"Skipping symlink: {p.name}")
+            continue
+        resolved = p.resolve()
+        if not str(resolved).startswith(str(report_dir_resolved)):
+            print(f"Skipping file outside report directory: {p.name}")
+            continue
+        seen_files.add(str(resolved))
+        key = str(resolved)
         meta = cache.get(key, {})
         checksum = _checksum(p)
         txt = _load_text_file(meta.get("text_file")) if meta.get("checksum") == checksum else None
