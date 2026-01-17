@@ -82,6 +82,8 @@ def _llm_call(prompt: str) -> str:
             allowed_hosts = {"localhost", "127.0.0.1", "::1"}
             if parsed.hostname not in allowed_hosts:
                 return "(Ollama URL must be localhost for security)"
+            if parsed.scheme not in ("http", "https"):
+                return "(Ollama URL must use http or https)"
             response = requests.post(
                 f"{base}/api/generate",
                 json={"model": model, "prompt": prompt, "stream": False},

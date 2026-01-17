@@ -8,11 +8,23 @@ from geopy.geocoders import Nominatim
 
 
 def _load_cache(path: Path) -> pd.DataFrame:
+    \"\"\"Load geocache with validation.\"\"\"
     if not path.exists():
         return pd.DataFrame(columns=["location", "lat", "lon"])
     try:
-        return pd.read_csv(path)
-    except (pd.errors.EmptyDataError, OSError):
+        # Limit file size to prevent DoS
+        if path.stat().st_size > 50_000_000:  # 50MB limit
+            print("Warning: Geocache too large, resetting")
+            return pd.DataFrame(columns=["location", "lat", "lon"])
+        df = pd.read_csv(path)
+        # Validate expected columns exist
+        if not {"location", "lat", "lon"}.issubset(df.columns):
+            return pd.DataFrame(columns=["location", "lat", "lon"])
+        # Validate coordinate bounds
+        df = df[df["lat"].between(-90, 90) | df["lat"].isna()]
+        df = df[df["lon"].between(-180, 180) | df["lon"].isna()]
+        return df
+    except (pd.errors.EmptyDataError, OSError, ValueError):
         return pd.DataFrame(columns=["location", "lat", "lon"])
 
 

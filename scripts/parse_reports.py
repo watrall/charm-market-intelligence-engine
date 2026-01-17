@@ -20,10 +20,20 @@ def extract_text_pdf(path: Path) -> str:
 
 
 def _load_cache():
+    \"\"\"Load report cache with safe JSON deserialization.\"\"\"
     if CACHE_FILE.exists():
         try:
-            return json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+            raw = CACHE_FILE.read_text(encoding="utf-8")
+            # Limit cache size to prevent DoS
+            if len(raw) > 10_000_000:  # 10MB limit
+                print("Warning: Reports cache too large, resetting")
+                return {}
+            loaded = json.loads(raw)
+            # Validate structure: must be dict
+            if isinstance(loaded, dict):
+                return loaded
+            return {}
+        except (json.JSONDecodeError, OSError, TypeError):
             return {}
     return {}
 

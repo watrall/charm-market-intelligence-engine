@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import ast
+import html
 import json
 import re
 from pathlib import Path
@@ -35,18 +35,20 @@ JOBTYPE_ICONS = {
 }
 
 def _coerce_skills(value) -> list[str]:
+    """Safely parse skills from various formats without code execution risk."""
     if isinstance(value, list):
         return [str(v).strip() for v in value if str(v).strip()]
     if isinstance(value, str):
         raw = value.strip()
         if not raw:
             return []
+        # Try JSON parsing first (safe, no code execution)
         if raw.startswith("[") and raw.endswith("]"):
             try:
-                parsed = ast.literal_eval(raw)
+                parsed = json.loads(raw)
                 if isinstance(parsed, list):
                     return [str(v).strip() for v in parsed if str(v).strip()]
-            except (ValueError, SyntaxError):
+            except (json.JSONDecodeError, TypeError):
                 pass
         tokens = re.split(r"[;|,]", raw)
         return [t.strip(" []'\"") for t in tokens if t.strip(" []'\"")]
@@ -184,10 +186,13 @@ def draw_points_map(df: pd.DataFrame):
         color = SENIORITY_COLORS.get(str(r.get("seniority", "")).lower(), "#6c6c6c") if has_seniority else "#6c6c6c"
         icon = JOBTYPE_ICONS.get(str(r.get("job_type", "")).lower(), "circle") if has_jobtype else "circle"
 
-        title = str(r.get("title", "")).strip()
-        company = str(r.get("company", "")).strip()
-        loc_txt = f"{str(r.get('city','')).strip()}, {str(r.get('state','')).strip()}" if has_city_state else ""
-        skills = ", ".join(r.get("skills_list", [])[:5])
+        # Sanitize all user-controlled content to prevent XSS
+        title = html.escape(str(r.get("title", "")).strip())
+        company = html.escape(str(r.get("company", "")).strip())
+        city = html.escape(str(r.get("city", "")).strip()) if has_city_state else ""
+        state = html.escape(str(r.get("state", "")).strip()) if has_city_state else ""
+        loc_txt = f"{city}, {state}" if has_city_state else ""
+        skills = ", ".join(html.escape(s) for s in r.get("skills_list", [])[:5])
 
         line1 = f"<b>{title}</b>" if title else ""
         line2 = company if company else ""
@@ -195,8 +200,12 @@ def draw_points_map(df: pd.DataFrame):
         line4 = skills if skills else ""
         url = str(r.get("url", "")).strip() if has_url else ""
 
-        links = f'<br><a href="{url}" target="_blank">Job posting</a>' if has_url and url else ""
-        html = "<br>".join([x for x in (line1, line2, line3, line4) if x]) + links
+        # Validate URL scheme before including in HTML
+        links = ""
+        if has_url and url and url.startswith(("http://", "https://")):
+            safe_url = html.escape(url)
+            links = f'<br><a href="{safe_url}" target="_blank" rel="noopener noreferrer">Job posting</a>'
+        popup_html = "<br>".join([x for x in (line1, line2, line3, line4) if x]) + links
 
         folium.Marker(
             location=[r["lat"], r["lon"]],
@@ -209,7 +218,7 @@ def draw_points_map(df: pd.DataFrame):
             color=color,
             fill=True,
             fill_opacity=0.85,
-            popup=folium.Popup(html, max_width=320),
+            popup=folium.Popup(popup_html, max_width=320),
         ).add_to(m)
 
     folium.LayerControl(collapsed=True).add_to(m)

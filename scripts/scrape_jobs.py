@@ -28,13 +28,25 @@ _DESC_CACHE_DIRTY = False
 
 
 def _load_desc_cache():
+    \"\"\"Load description cache with safe JSON deserialization.\"\"\"
     global _DESC_CACHE
     if _DESC_CACHE is not None:
         return _DESC_CACHE
     if DESC_CACHE_PATH.exists():
         try:
-            _DESC_CACHE = json.loads(DESC_CACHE_PATH.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+            raw = DESC_CACHE_PATH.read_text(encoding="utf-8")
+            # Limit cache size to prevent DoS via malicious cache file
+            if len(raw) > 50_000_000:  # 50MB limit
+                print("Warning: Description cache too large, resetting")
+                _DESC_CACHE = {}
+            else:
+                loaded = json.loads(raw)
+                # Validate structure: must be dict with string keys/values
+                if isinstance(loaded, dict):
+                    _DESC_CACHE = {str(k): str(v)[:20000] for k, v in loaded.items()}
+                else:
+                    _DESC_CACHE = {}
+        except (json.JSONDecodeError, OSError, TypeError):
             _DESC_CACHE = {}
     else:
         _DESC_CACHE = {}
@@ -82,12 +94,16 @@ def _find_next_page(soup, base):
 
     nxt = urljoin(base, cand)
     try:
-        nxt_host = urlparse(nxt).netloc
-        base_host = urlparse(base).netloc
-        if nxt_host and nxt_host != base_host:
+        parsed = urlparse(nxt)
+        base_parsed = urlparse(base)
+        # Security: only allow http/https schemes
+        if parsed.scheme not in ("http", "https"):
+            return None
+        # Security: only follow links to same domain
+        if parsed.netloc and parsed.netloc != base_parsed.netloc:
             return None
     except ValueError:
-        pass
+        return None
     return nxt
 
 def _acquire_slot():
