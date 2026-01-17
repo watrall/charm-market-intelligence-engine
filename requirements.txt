@@ -1,21 +1,43 @@
+# CHARM Market Intelligence Engine - Core Dependencies
+# Pinned for reproducibility. To update: pip install --upgrade <package> && pip freeze | grep <package>
+
+# Web scraping
 beautifulsoup4==4.12.3
 requests==2.32.3
+
+# Data processing
 pandas==2.2.2
 numpy==1.26.4
+
+# Configuration
 python-dotenv==1.0.1
+
+# NLP
 spacy==3.7.4
 nltk==3.9.1
+
+# Dashboard
 streamlit==1.37.1
 plotly==5.23.0
 folium==0.17.0
 streamlit-folium==0.20.0
+
+# Geocoding
 geopy==2.4.1
+
+# PDF parsing
 PyMuPDF==1.24.10
+
+# Google Sheets (optional)
 gspread==6.1.2
-google-auth>=2.23.0
-google-auth-oauthlib>=1.1.0
+google-auth==2.23.0
+google-auth-oauthlib==1.1.0
+
+# Visualization
 wordcloud==1.9.3
+
+# Machine learning (optional clustering)
 scikit-learn==1.5.1
 
-openai>=1.35.0
-
+# LLM (optional)
+openai==1.35.0

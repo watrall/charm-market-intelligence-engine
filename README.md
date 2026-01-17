@@ -7,26 +7,118 @@ CHARM = Cultural Heritage & Archaeological Resource Management
 **Outcomes:** scrape job postings (American Anthropological Association & American Cultural Resources Association) → clean/dedupe → parse uploaded PDFs (industry reports) → spaCy Natural Language Processing (entity + skill extraction) → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
 
 ## Quick Start
+
+The fastest way to get CHARM running:
+
+```bash
+# 1. Clone and enter the repository
+git clone https://github.com/YOUR_USERNAME/charm-market-intelligence-engine.git
+cd charm-market-intelligence-engine
+
+# 2. Set up environment (creates venv, installs deps, downloads NLP models)
+make setup
+
+# 3. Run the pipeline
+make run-pipeline
+
+# 4. Launch the dashboard
+make run-dashboard
+```
+
+**Alternative (manual setup):**
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp config/.env.example .env
+cp .env.example .env
 
-# Optional models
+# Download NLP models
 python -m spacy download en_core_web_sm
 python -c "import nltk; nltk.download('vader_lexicon')"
 
-# Run pipeline
+# Run pipeline and dashboard
 python scripts/pipeline.py
-
-# Start dashboard
 streamlit run dashboard/app.py
 ```
 
 > **Cost-safe dry run:** `USE_LLM` and `USE_SHEETS` default to `false` in `.env.example` so you can run the full pipeline locally without triggering OpenAI tokens or Google Sheets API calls. Flip them to `true` only after you are ready to authenticate those paid services.
 
-## Environment placeholders
-The sample `config/.env.example` uses **explicit placeholders** anywhere a key/ID/secret is needed. Replace these with real values:
+---
+
+## Validate Your Run
+
+After running the pipeline, check that these files were created:
+
+| File | What it contains | Success indicator |
+|------|------------------|-------------------|
+| `data/processed/jobs.csv` | Scraped and enriched job postings | File exists, has rows with `title`, `company`, `skills` columns |
+| `data/processed/analysis.json` | Summary statistics | Contains `num_jobs`, `top_skills`, `schema_version` |
+| `data/processed/insights.md` | Human-readable market brief | Contains "## In-demand Skills" section |
+| `data/charm.db` | SQLite database | File exists (if `USE_SQLITE=true`) |
+
+**Quick validation command:**
+```bash
+# Check that key outputs exist and have content
+ls -la data/processed/
+head -5 data/processed/jobs.csv
+cat data/processed/analysis.json | head -20
+```
+
+**Dashboard validation:**
+1. Run `make run-dashboard`
+2. Open http://localhost:8501 in your browser
+3. You should see KPI cards, a map, and skill charts
+4. If "No data yet" appears, the pipeline hasn't run successfully
+
+---
+
+## Data Directories
+
+CHARM organizes data into specific directories. Understanding this structure helps with debugging and customization.
+
+```
+charm-market-intelligence-engine/
+├── config/                    # Configuration files
+│   ├── .env.example          # Environment variable template
+│   ├── insight_prompt.md     # LLM prompt template (editable)
+│   └── job_patterns.json     # Job type/seniority regex patterns
+├── data/                      # All generated data (gitignored)
+│   ├── cache/                # Cached API responses
+│   │   ├── job_descriptions.json   # Cached job detail pages
+│   │   ├── reports_cache.json      # Cached PDF extractions
+│   │   └── gsheets_jobs_urls.txt   # Synced job URLs
+│   ├── processed/            # Pipeline outputs (dashboard reads these)
+│   │   ├── jobs.csv          # Enriched job postings
+│   │   ├── reports.csv       # Parsed PDF reports
+│   │   ├── analysis.json     # Summary statistics
+│   │   ├── insights.md       # Generated brief
+│   │   └── wordcloud.png     # Visualization
+│   ├── geocache.csv          # Location → lat/lon cache
+│   └── charm.db              # SQLite database
+├── reports/                   # Drop PDFs here for parsing
+├── skills/                    # Taxonomy definitions
+│   └── skills_taxonomy.csv   # Skill aliases → normalized names
+└── secrets/                   # Credentials (gitignored)
+    └── service_account.json  # Google API credentials
+```
+
+**What gets cached (and why):**
+- **Job descriptions**: Avoids re-fetching the same posting detail pages
+- **PDF text**: Avoids re-parsing unchanged PDFs
+- **Geocoding**: Nominatim rate limits require caching location lookups
+
+**To clear caches and force fresh data:**
+```bash
+rm -rf data/cache/
+make run-pipeline
+```
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and configure as needed. The file includes detailed comments explaining each variable.
+
+### Core Flags (safe defaults)
 
 - `GOOGLE_SERVICE_ACCOUNT_FILE=ENTER_PATH_TO_SERVICE_ACCOUNT_JSON_HERE`
   - Path to your service account key file (like `secrets/service_account.json`).
@@ -86,10 +178,31 @@ python scripts/gsheets_test.py
 ```
 
 ## Troubleshooting
-- **No jobs scraped**: Update CSS selectors in `scripts/scrape_jobs.py`.
-- **spaCy model missing**: `python -m spacy download en_core_web_sm`.
-- **Sheets append fails**: Check `GOOGLE_SHEET_ID`, service account permissions, and network egress.
-- **Geocoding slow**: Nominatim (the OpenStreetMap geocoding service) is rate-limited; a geocache reduces repeat lookups.
+
+### Common issues and fixes
+
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| `ModuleNotFoundError: No module named 'spacy'` | Virtual environment not activated | Run `source venv/bin/activate` (macOS/Linux) or `venv\Scripts\activate` (Windows) |
+| `OSError: [E050] Can't find model 'en_core_web_sm'` | spaCy language model not downloaded | Run `python -m spacy download en_core_web_sm` |
+| No jobs scraped (empty CSV) | CSS selectors out of date OR site blocking requests | Check `scripts/scrape_jobs.py` selectors; add delays between requests |
+| `FileNotFoundError: config/.env` | Environment file missing | Copy `.env.example` to `config/.env` and fill in values |
+| Geocoding extremely slow | Nominatim rate limiting | Normal behavior; geocache (`data/geocache.db`) speeds up repeat runs |
+| `google.auth.exceptions.DefaultCredentialsError` | Service account JSON missing or path wrong | Verify `GOOGLE_SERVICE_ACCOUNT_FILE` path in `.env` |
+| Sheets append fails silently | Sheet ID incorrect or missing permissions | Double-check `GOOGLE_SHEET_ID`; share sheet with service account email |
+| Dashboard won't start | Port 8501 already in use | Kill other Streamlit processes or use `streamlit run dashboard/app.py --server.port 8502` |
+| `OPENAI_API_KEY` error when `USE_LLM=true` | Key not set or invalid | Add valid key to `.env` or set `USE_LLM=false` |
+
+### Permission issues (NAS / network drives)
+If you're running on a NAS or shared drive:
+- Ensure write access to `data/` directory
+- SQLite may perform poorly over network mounts; consider running locally
+
+### Checking logs
+Most scripts print progress to stdout. For more detail:
+```bash
+python scripts/pipeline.py 2>&1 | tee pipeline.log
+```
 
 ## Insight prompt (external & editable)
 The LLM question set lives in `config/insight_prompt.md`. It’s plain text with **{{variables}}** you can edit:

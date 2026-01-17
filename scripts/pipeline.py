@@ -99,13 +99,32 @@ def main():
     print("CHARM pipeline complete.")
 
 
+# Stable column order for reproducible CSV output
+JOBS_CSV_COLUMNS = [
+    "source", "title", "company", "location", "city", "state",
+    "lat", "lon", "date_posted", "job_type", "seniority",
+    "skills", "skills_list", "salary_min", "salary_max", "currency",
+    "url", "description", "sentiment",
+]
+
+REPORTS_CSV_COLUMNS = [
+    "report_name", "word_count", "skills", "top_entities", "text",
+]
+
+
 def _save_processed_data(jobs_df, reports_df, proc):
+    """Save processed data to CSV with stable column ordering."""
     jobs_to_save = jobs_df.copy()
     jobs_to_save["skills_list"] = jobs_to_save["skills"].apply(_skills_to_json)
     jobs_to_save["skills"] = jobs_to_save["skills"].apply(_skills_to_string)
-    jobs_to_save.to_csv(proc / "jobs.csv", index=False)
+    
+    # Ensure stable column order (only include columns that exist)
+    job_cols = [c for c in JOBS_CSV_COLUMNS if c in jobs_to_save.columns]
+    jobs_to_save[job_cols].to_csv(proc / "jobs.csv", index=False)
+    
     if reports_df is not None and not reports_df.empty:
-        reports_df.to_csv(proc / "reports.csv", index=False)
+        report_cols = [c for c in REPORTS_CSV_COLUMNS if c in reports_df.columns]
+        reports_df[report_cols].to_csv(proc / "reports.csv", index=False)
 
 
 def _persist_to_sqlite(base, jobs_df, reports_df):

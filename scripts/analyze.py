@@ -2,12 +2,21 @@ import itertools
 import json
 import logging
 import os
+import random
 from collections import Counter
 
 import pandas as pd
 from wordcloud import WordCloud
 
 logger = logging.getLogger(__name__)
+
+# Schema version for tracking output format changes
+SCHEMA_VERSION = "1.0"
+
+# Determinism: seed for reproducible results
+def _get_seed() -> int:
+    """Get seed from environment or use default for reproducibility."""
+    return int(os.getenv("CHARM_SEED", "42"))
 
 
 def _ensure_skill_lists(series: pd.Series):
@@ -32,14 +41,21 @@ def _ensure_skill_lists(series: pd.Series):
 
 
 def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd.Series:
+    """Analyze job market data and return summary statistics.
+    
+    Output is deterministic given the same input data (except for run_timestamp).
+    """
     jobs_df = jobs_df if jobs_df is not None else pd.DataFrame()
+    
+    # Ordered dict ensures consistent JSON key ordering
     out = {
+        "schema_version": SCHEMA_VERSION,
         "num_jobs": int(len(jobs_df)),
         "unique_employers": 0,
-        "top_skills": [],
         "geocoded": 0,
-        "report_skills": [],
+        "top_skills": [],
         "top_employers": [],
+        "report_skills": [],
         "run_timestamp": pd.Timestamp.utcnow().isoformat(),
     }
 
@@ -80,8 +96,22 @@ def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd
     return pd.Series(out)
 
 def save_wordcloud(jobs_df: pd.DataFrame, out_path):
+    """Generate word cloud from job descriptions.
+    
+    Uses seeded random for reproducible layout.
+    """
     texts = jobs_df["description"].fillna("").tolist()
     joined = " ".join(texts)
-    if not joined.strip(): return
-    wc = WordCloud(width=1400, height=800, background_color="white").generate(joined)
+    if not joined.strip():
+        return
+    
+    seed = _get_seed()
+    random.seed(seed)
+    
+    wc = WordCloud(
+        width=1400,
+        height=800,
+        background_color="white",
+        random_state=seed,
+    ).generate(joined)
     wc.to_file(str(out_path))
