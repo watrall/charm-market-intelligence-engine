@@ -6,7 +6,12 @@ from pathlib import Path
 
 import pandas as pd
 
-_SAL_RE = re.compile(r'(\$|USD\s*)?\s*(\d{2,3}[,\.]?\d{0,3})(?:\s*[-–to]{1,3}\s*(\d{2,3}[,\.]?\d{0,3}))?\s*(?:per\s*(year|yr|hour|hr|annum))?', re.I)
+_SAL_RE = re.compile(
+    r"(\$|USD\s*)?\s*(\d{2,3}(?:[,\.]\d{3})?)"
+    r"(?:\s*(?:-|–|to)\s*(?:\$|USD\s*)?\s*(\d{2,3}(?:[,\.]\d{3})?))?"
+    r"\s*(?:per\s*(year|yr|hour|hr|annum))?",
+    re.I,
+)
 
 US_STATE_MAP = {
     "AL": "Alabama",
