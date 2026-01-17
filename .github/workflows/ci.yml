@@ -51,7 +51,7 @@ jobs:
 
       - name: Download NLP models
         run: |
-          python -m spacy download en_core_web_sm
+          python -c "import spacy.cli; spacy.cli.download('en_core_web_sm')"
           python -c "import nltk; nltk.download('vader_lexicon', quiet=True)"
 
       - name: Lint with Ruff
