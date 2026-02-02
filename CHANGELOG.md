@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-02-02 — Stability hardening & guardrails
+### Stability
+- `CHARM_SEED` parsing now defaults to 42 with a warning instead of crashing when the env var is non-numeric.
+- Pattern classification no longer crashes when `config/job_patterns.json` is missing or malformed; it now falls back with warnings.
+- Google Sheets sync errors are now caught and logged so the pipeline finishes even if Sheets is unavailable.
+### Maintainability
+- Pattern loader now honors `JOB_PATTERNS_PATH` overrides and exposes a cache reset helper for safer tests/overrides.
+- SQLite persistence closes connections via `finally` to avoid leaked file handles during pipeline runs.
+### Testing/Verification
+- Added regression tests for deterministic seeding when `CHARM_SEED` is valid/invalid.
+- Added safeguards tests for missing/invalid job pattern configs.
+- Added regression test ensuring Sheets sync failures are tolerated.
+### Notes / Deferred
+- None.
+
 ## 2025-09-15 — Schema alignment & reliability
 - Added `config/.env.example` so Quick Start instructions work out of the box and documented defaults are real.
 - `jobs.csv` now includes the documented fields (`city`, `state`, `job_type`, `seniority`, canonical `url`, salary hints) via lightweight parsing/heuristics. `analysis.json` also contains `top_employers` plus a `run_timestamp`.

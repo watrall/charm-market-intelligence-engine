@@ -6,6 +6,7 @@ without requiring external services.
 """
 
 # Import the functions we're testing
+import json
 import sys
 from pathlib import Path
 
@@ -16,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.data_cleaning import (
     _hash_row,
     _parse_city_state,
+    _reset_pattern_cache,
     clean_and_dedupe,
     extract_salary,
 )
@@ -149,3 +151,27 @@ class TestCleanAndDedupe:
         cleaned2 = clean_and_dedupe(sample_jobs_df.copy())
 
         assert list(cleaned1.columns) == list(cleaned2.columns)
+
+
+class TestPatternLoading:
+    """Pattern config should fail gracefully."""
+
+    def test_missing_pattern_file_does_not_raise(self, monkeypatch, tmp_path):
+        _reset_pattern_cache()
+        missing = tmp_path / "nope.json"
+        monkeypatch.setenv("JOB_PATTERNS_PATH", str(missing))
+
+        # Should not raise; should classify as empty
+        from scripts.data_cleaning import _infer_job_type
+
+        assert _infer_job_type("Archaeologist", "field work") == ""
+
+    def test_invalid_regex_is_skipped(self, monkeypatch, tmp_path):
+        _reset_pattern_cache()
+        bad_cfg = tmp_path / "job_patterns.json"
+        bad_cfg.write_text(json.dumps({"job_type": {"bad": ["("]}, "seniority": {}}))
+        monkeypatch.setenv("JOB_PATTERNS_PATH", str(bad_cfg))
+
+        from scripts.data_cleaning import _infer_job_type
+
+        assert _infer_job_type("Project Manager", "") == ""

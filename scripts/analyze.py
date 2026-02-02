@@ -16,7 +16,14 @@ SCHEMA_VERSION = "1.0"
 # Determinism: seed for reproducible results
 def _get_seed() -> int:
     """Get seed from environment or use default for reproducibility."""
-    return int(os.getenv("CHARM_SEED", "42"))
+    raw = os.getenv("CHARM_SEED")
+    if raw is None or not raw.strip():
+        return 42
+    try:
+        return int(raw)
+    except ValueError:
+        logger.warning("Invalid CHARM_SEED '%s'; defaulting to 42", raw)
+        return 42
 
 
 def _ensure_skill_lists(series: pd.Series):

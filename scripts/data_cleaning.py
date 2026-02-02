@@ -1,6 +1,8 @@
 import hashlib
 import json
+import os
 import re
+import warnings
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -70,43 +72,74 @@ STATE_NAME_TO_ABBR = {name.lower(): abbr for abbr, name in US_STATE_MAP.items()}
 
 _JOB_PATTERNS: dict[str, re.Pattern[str]] | None = None
 _SENIORITY_PATTERNS: list[tuple[str, re.Pattern[str]]] | None = None
+_PATTERN_SOURCE: Path | None = None
 
 
-def _compile_entries(entries: Sequence[object]) -> re.Pattern[str]:
+def _reset_pattern_cache() -> None:
+    """Reset cached job/seniority patterns (used in tests and overrides)."""
+    global _JOB_PATTERNS, _SENIORITY_PATTERNS, _PATTERN_SOURCE
+    _JOB_PATTERNS = None
+    _SENIORITY_PATTERNS = None
+    _PATTERN_SOURCE = None
+
+
+def _compile_entries(entries: Sequence[object], bucket: str, errors: list[str]) -> re.Pattern[str]:
     compiled = []
     for entry in entries:
         pattern = entry
         if isinstance(entry, dict):
             pattern = entry.get("pattern")
         if not pattern:
-            raise ValueError("Each job pattern entry must include a 'pattern'.")
+            errors.append(f"{bucket}: missing 'pattern' entry; skipped")
+            continue
         compiled.append(f"(?:{pattern})")
-    return re.compile("|".join(compiled), re.I) if compiled else re.compile(r"(?!x)")
+    try:
+        return re.compile("|".join(compiled), re.I) if compiled else re.compile(r"(?!x)")
+    except re.error as exc:
+        errors.append(f"{bucket}: invalid regex ({exc}); skipped bucket")
+        return re.compile(r"(?!x)")
 
 
-def _load_patterns() -> tuple[dict[str, re.Pattern[str]], list[tuple[str, re.Pattern[str]]]]:
-    global _JOB_PATTERNS, _SENIORITY_PATTERNS
-    if _JOB_PATTERNS is not None and _SENIORITY_PATTERNS is not None:
+def _patterns_path(config_path: Path | None = None) -> Path:
+    override = os.getenv("JOB_PATTERNS_PATH")
+    base = Path(__file__).resolve().parents[1]
+    return Path(config_path or override or (base / "config" / "job_patterns.json")).resolve()
+
+
+def _load_patterns(config_path: Path | None = None) -> tuple[dict[str, re.Pattern[str]], list[tuple[str, re.Pattern[str]]]]:
+    global _JOB_PATTERNS, _SENIORITY_PATTERNS, _PATTERN_SOURCE
+    path = _patterns_path(config_path)
+    if (
+        _JOB_PATTERNS is not None
+        and _SENIORITY_PATTERNS is not None
+        and _PATTERN_SOURCE == path
+    ):
         return _JOB_PATTERNS, _SENIORITY_PATTERNS
 
-    config_path = Path(__file__).resolve().parents[1] / "config" / "job_patterns.json"
     try:
-        with config_path.open("r", encoding="utf-8") as handle:
+        with path.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
     except FileNotFoundError:
-        raise FileNotFoundError(f"Missing job pattern config: {config_path}") from None
+        warnings.warn(f"Job pattern config missing at {path}; classification skipped.")
+        _JOB_PATTERNS, _SENIORITY_PATTERNS, _PATTERN_SOURCE = {}, [], path
+        return _JOB_PATTERNS, _SENIORITY_PATTERNS
     except json.JSONDecodeError as exc:
-        raise ValueError(f"Invalid JSON in {config_path}") from exc
+        warnings.warn(f"Invalid JSON in {path}: {exc}; classification skipped.")
+        _JOB_PATTERNS, _SENIORITY_PATTERNS, _PATTERN_SOURCE = {}, [], path
+        return _JOB_PATTERNS, _SENIORITY_PATTERNS
 
+    errors: list[str] = []
     job_patterns = {
-        str(bucket): _compile_entries(entries)
+        str(bucket): _compile_entries(entries, bucket=str(bucket), errors=errors)
         for bucket, entries in data.get("job_type", {}).items()
     }
     seniority_patterns = [
-        (str(bucket), _compile_entries(entries))
+        (str(bucket), _compile_entries(entries, bucket=str(bucket), errors=errors))
         for bucket, entries in data.get("seniority", {}).items()
     ]
-    _JOB_PATTERNS, _SENIORITY_PATTERNS = job_patterns, seniority_patterns
+    if errors:
+        warnings.warn("; ".join(errors))
+    _JOB_PATTERNS, _SENIORITY_PATTERNS, _PATTERN_SOURCE = job_patterns, seniority_patterns, path
     return _JOB_PATTERNS, _SENIORITY_PATTERNS
 
 def extract_salary(text: str) -> tuple[float | None, float | None, str | None]:

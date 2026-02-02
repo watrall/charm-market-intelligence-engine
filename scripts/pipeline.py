@@ -134,11 +134,14 @@ def _persist_to_sqlite(base, jobs_df, reports_df):
 
     db_path = base / "data" / "charm.db"
     conn = get_conn(db_path)
-    init_db(conn)
-    upsert_jobs(conn, jobs_df)
-    if reports_df is not None and not reports_df.empty:
-        upsert_reports(conn, reports_df)
-    print(f"SQLite persisted to {db_path}")
+    try:
+        init_db(conn)
+        upsert_jobs(conn, jobs_df)
+        if reports_df is not None and not reports_df.empty:
+            upsert_reports(conn, reports_df)
+        print(f"SQLite persisted to {db_path}")
+    finally:
+        conn.close()
 
 
 def _sync_to_google_sheets(jobs_df, reports_df):
@@ -156,6 +159,8 @@ def _sync_to_google_sheets(jobs_df, reports_df):
             print(f"Google Sheets: appended {report_rows} report rows.")
     except (ImportError, RuntimeError) as e:
         print(f"Sheets sync skipped: {e}")
+    except Exception as e:  # noqa: BLE001
+        print(f"Sheets sync failed; continuing without Sheets: {e}")
 
 if __name__ == "__main__":
     main()

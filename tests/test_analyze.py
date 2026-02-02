@@ -13,7 +13,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from scripts.analyze import _ensure_skill_lists, analyze_market
+from scripts.analyze import _ensure_skill_lists, _get_seed, analyze_market
 
 
 class TestEnsureSkillLists:
@@ -133,3 +133,17 @@ class TestAnalyzeMarket:
         assert result1["num_jobs"] == result2["num_jobs"]
         assert result1["top_skills"] == result2["top_skills"]
         assert result1["top_employers"] == result2["top_employers"]
+
+
+class TestGetSeed:
+    """Deterministic seeding should tolerate bad input."""
+
+    def test_invalid_env_defaults(self, monkeypatch):
+        """Non-numeric CHARM_SEED should fall back to 42, not crash."""
+        monkeypatch.setenv("CHARM_SEED", "not-a-number")
+        assert _get_seed() == 42
+
+    def test_valid_env_used(self, monkeypatch):
+        """Valid numeric seeds should be honored."""
+        monkeypatch.setenv("CHARM_SEED", "123")
+        assert _get_seed() == 123
