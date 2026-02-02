@@ -8,6 +8,11 @@
 ### Maintainability
 - Pattern loader now honors `JOB_PATTERNS_PATH` overrides and exposes a cache reset helper for safer tests/overrides.
 - SQLite persistence closes connections via `finally` to avoid leaked file handles during pipeline runs.
+### UX and Distribution
+- Streamlit app now includes a wizard that supports ingestion, configuration, a safe pipeline run button, and results in one place.
+- Added Docker support with a single image that can run either the dashboard or the pipeline.
+### LLM Flexibility
+- Added Hugging Face hosted inference option for the LLM brief in addition to OpenAI, Ollama, and OpenAI compatible providers.
 ### Testing/Verification
 - Added regression tests for deterministic seeding when `CHARM_SEED` is valid/invalid.
 - Added safeguards tests for missing/invalid job pattern configs.
