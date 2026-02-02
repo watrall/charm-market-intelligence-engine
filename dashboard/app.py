@@ -34,7 +34,7 @@ def ensure_lucide():
         """,
         unsafe_allow_html=True,
     )
-st.session_state["_lucide_loaded"] = True
+    st.session_state["_lucide_loaded"] = True
 
 from dashboard.pipeline_runner import acquire_lock, allow_pipeline_run, release_lock, run_pipeline
 
