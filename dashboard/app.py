@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+import folium
+import pandas as pd
+import streamlit as st
+from folium.plugins import HeatMap, MarkerCluster
+from streamlit_folium import st_folium
+
 import html
 import json
 import os
@@ -12,6 +18,7 @@ from pathlib import Path
 APP_ROOT = Path(__file__).resolve().parents[1]
 if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
+
 
 # Simple helper to inject Lucide icon font via CDN (once per session)
 def ensure_lucide():
@@ -29,12 +36,6 @@ def ensure_lucide():
         unsafe_allow_html=True,
     )
     st.session_state["_lucide_loaded"] = True
-
-import folium
-import pandas as pd
-import streamlit as st
-from folium.plugins import HeatMap, MarkerCluster
-from streamlit_folium import st_folium
 
 from dashboard.pipeline_runner import acquire_lock, allow_pipeline_run, release_lock, run_pipeline
 
@@ -484,7 +485,7 @@ def _wizard_stepper(steps: list[str]) -> int:
 
     # Mark completion states so we can lock/unlock steps but still allow back-navigation
     if "wizard_done" not in st.session_state:
-        st.session_state["wizard_done"] = {s: False for s in steps}
+        st.session_state["wizard_done"] = dict.fromkeys(steps, False)
 
     # Build a horizontal stepper with explicit numbering and lock future steps until prior completed
     icon_map = {
