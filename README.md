@@ -2,6 +2,8 @@
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](REPLACE_WITH_YOUR_STREAMLIT_DEMO_URL)
 
+**Demo mode (no external services):** set `DEMO_MODE=1` when launching the dashboard to use the bundled synthetic snapshot in `demo/processed/`. Streamlit Cloud should set this env var so it never scrapes or calls paid APIs.
+
 This is a clean, runnable reference implementation for automated market analysis in the cultural resource & heritage management space (designed originally to be hosted and run on a local Synology NAS).
 
 CHARM = Cultural Heritage & Archaeological Resource Management
