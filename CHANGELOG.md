@@ -26,6 +26,7 @@
 - Added regression tests for deterministic seeding when `CHARM_SEED` is valid/invalid.
 - Added safeguards tests for missing/invalid job pattern configs.
 - Added regression test ensuring Sheets sync failures are tolerated.
+- Docker images will be published with tags `latest` and `v0.1.0` for this release cycle.
 - Added tests for upload filename sanitization, pipeline log truncation, and LLM URL validation.
 ### Notes / Deferred
 - None.
