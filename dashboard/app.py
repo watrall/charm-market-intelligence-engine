@@ -8,12 +8,13 @@ import time
 from pathlib import Path
 
 import folium
-from folium.plugins import HeatMap, MarkerCluster
 import pandas as pd
 import streamlit as st
+from folium.plugins import HeatMap, MarkerCluster
 from streamlit_folium import st_folium
 
 from dashboard.pipeline_runner import acquire_lock, allow_pipeline_run, release_lock, run_pipeline
+
 
 # Simple helper to inject Lucide icon font via CDN (once per session)
 def ensure_lucide():
