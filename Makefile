@@ -64,6 +64,9 @@ dash: run-dashboard
 lint:
 	@$(PY) -m ruff check scripts/ dashboard/ tests/ --fix
 
+lint-test:
+	@PYTHONPATH=$(PWD) $(PY) -m ruff check scripts/ dashboard/ tests/ --output-format=github && PYTHONPATH=$(PWD) $(PY) -m pytest tests/ -v --tb=short
+
 typecheck:
 	@$(PY) -m mypy --explicit-package-bases scripts/ --ignore-missing-imports
 
