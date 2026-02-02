@@ -77,6 +77,7 @@ def run_pipeline(base: Path, env_overrides: dict[str, str] | None = None) -> Run
 
     Uses the current interpreter so this works in local venvs and Docker.
     """
+    max_output_chars = 200_000
     env = os.environ.copy()
     if env_overrides:
         env.update({k: str(v) for k, v in env_overrides.items() if v is not None})
@@ -84,10 +85,23 @@ def run_pipeline(base: Path, env_overrides: dict[str, str] | None = None) -> Run
     cmd = [sys.executable, "-u", str(base / "scripts" / "pipeline.py")]
     proc = Popen(cmd, cwd=str(base), env=env, stdout=PIPE, stderr=STDOUT, text=True, bufsize=1)
 
-    lines: list[str] = []
+    buffer: list[str] = []
+    total_len = 0
+    truncated = False
     if proc.stdout:
         for line in proc.stdout:
-            lines.append(line)
+            buffer.append(line)
+            total_len += len(line)
+            if total_len > max_output_chars:
+                # drop oldest lines to keep memory bounded
+                overflow = total_len - max_output_chars
+                while buffer and overflow > 0:
+                    removed = buffer.pop(0)
+                    overflow -= len(removed)
+                    total_len -= len(removed)
+                    truncated = True
     returncode = proc.wait()
-    return RunResult(returncode=returncode, output="".join(lines))
-
+    output = "".join(buffer)
+    if truncated:
+        output = "(truncated output)\n" + output
+    return RunResult(returncode=returncode, output=output)

@@ -4,6 +4,7 @@ import os
 from collections.abc import Iterable, Sequence
 from datetime import date
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pandas as pd
 import requests
@@ -57,6 +58,11 @@ def _llm_call(prompt: str) -> str:
             base_url = ""
             if provider == "openai_compat":
                 base_url = os.getenv("LLM_BASE_URL", "").strip()
+                parsed = urlparse(base_url or "")
+                if parsed.scheme and parsed.scheme not in {"http", "https"}:
+                    return "(Invalid LLM_BASE_URL scheme; only http/https allowed.)"
+                if base_url and not parsed.netloc:
+                    return "(Invalid LLM_BASE_URL; host missing.)"
             client = OpenAI(base_url=base_url) if base_url else OpenAI()
             client_response = client.chat.completions.create(
                 model=model,
@@ -105,6 +111,12 @@ def _llm_call(prompt: str) -> str:
             url = os.getenv("HF_INFERENCE_URL", "").strip()
             if not url:
                 url = f"https://api-inference.huggingface.co/models/{hf_model}"
+            else:
+                parsed = urlparse(url)
+                if parsed.scheme not in {"http", "https"}:
+                    return "(Invalid HF_INFERENCE_URL scheme; only http/https allowed.)"
+                if not parsed.netloc:
+                    return "(Invalid HF_INFERENCE_URL; host missing.)"
 
             headers = {"Authorization": f"Bearer {token}"}
             body = {

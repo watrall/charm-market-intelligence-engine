@@ -15,6 +15,8 @@ from streamlit_folium import st_folium
 
 from dashboard.pipeline_runner import acquire_lock, allow_pipeline_run, release_lock, run_pipeline
 
+SAFE_UPLOAD_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
+
 st.set_page_config(page_title="CHARM Dashboard", layout="wide")
 
 BASE = Path(__file__).resolve().parents[1]
@@ -44,6 +46,15 @@ def _truthy(value: str | None) -> bool:
     if value is None:
         return False
     return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def sanitize_upload_name(filename: str) -> str:
+    """Strip any path components and normalize characters to avoid traversal/overwrite."""
+    name = Path(filename).name
+    if not name:
+        return "upload.bin"
+    name = SAFE_UPLOAD_CHARS.sub("_", name).lstrip("._")
+    return name or "upload.bin"
 
 
 def app_mode() -> str:
@@ -416,7 +427,17 @@ def _render_ingest_step(mode: str):
     if uploaded:
         for f in uploaded:
             try:
-                out = rpt_dir / f.name
+                safe_name = sanitize_upload_name(f.name)
+                out = rpt_dir / safe_name
+                if out.exists():
+                    stem, suffix = out.stem, out.suffix
+                    counter = 1
+                    while True:
+                        candidate = rpt_dir / f"{stem}-{counter}{suffix}"
+                        if not candidate.exists():
+                            out = candidate
+                            break
+                        counter += 1
                 out.write_bytes(f.getbuffer())
                 saved += 1
             except Exception:

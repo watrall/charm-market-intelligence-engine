@@ -18,6 +18,9 @@
 | P1 | Non-numeric `CHARM_SEED` crashes analysis seeding | Fixed | `_get_seed` now defaults safely with warning |
 | P1 | Missing/invalid `config/job_patterns.json` stops classification pipeline | Fixed | Pattern loader now falls back to empty patterns with warnings and cache reset |
 | P1 | Google Sheets sync exceptions halt pipeline | Fixed | Sync errors now logged and skipped without aborting run |
+| P1 | Streamlit uploads could overwrite/traverse paths | Fixed | Filenames are sanitized and de-duplicated before write (`dashboard/app.py`) |
+| P1 | Dashboard pipeline run could grow unbounded output in memory | Fixed | Output capture capped and flagged when truncated (`dashboard/pipeline_runner.py`) |
+| P1 | OpenAI-compatible / HF inference URLs allowed non-http schemes | Fixed | Scheme/host validation added to block file/ftp SSRF vectors (`scripts/insights.py`) |
 | P2 | SQLite connection left open after pipeline completes | Fixed | `_persist_to_sqlite` now closes connections via `finally` |
 
 ## Fixes Applied
@@ -25,6 +28,9 @@
 - Pattern loading tolerates missing/invalid configs via env override and cache reset helpers (scripts/data_cleaning.py); added safeguards tests (tests/test_data_cleaning.py).
 - Google Sheets sync now catches API/runtime errors so optional integrations cannot crash pipeline (scripts/pipeline.py); regression test added (tests/test_pipeline.py).
 - SQLite persistence now closes connections even on errors to avoid leaked file handles (scripts/pipeline.py).
+- Streamlit uploads now sanitize filenames and avoid overwrites to prevent traversal/overwrite (dashboard/app.py; tests/test_dashboard_uploads.py).
+- Pipeline output capture bounded with truncation flag to avoid memory blow-ups in UI runs (dashboard/pipeline_runner.py; tests/test_pipeline_runner_limits.py).
+- LLM provider URL validation blocks non-http schemes for OpenAI-compatible and HF inference backends (scripts/insights.py; tests/test_insights_security.py).
 
 ## How to Validate
 - Run `make test` for pytest suite.

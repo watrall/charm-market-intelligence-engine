@@ -5,9 +5,13 @@
 - `CHARM_SEED` parsing now defaults to 42 with a warning instead of crashing when the env var is non-numeric.
 - Pattern classification no longer crashes when `config/job_patterns.json` is missing or malformed; it now falls back with warnings.
 - Google Sheets sync errors are now caught and logged so the pipeline finishes even if Sheets is unavailable.
+- Streamlit uploads sanitize filenames and avoid overwriting existing files to prevent traversal/overwrite risks.
+- Dashboard pipeline runs cap captured output and mark truncation to prevent unbounded memory growth.
+- OpenAI-compatible and Hugging Face inference URLs are validated to allow only http/https schemes, blocking file/ftp SSRF vectors.
 ### Maintainability
 - Pattern loader now honors `JOB_PATTERNS_PATH` overrides and exposes a cache reset helper for safer tests/overrides.
 - SQLite persistence closes connections via `finally` to avoid leaked file handles during pipeline runs.
+- Upload handling now uses a shared sanitizer for reuse and easier testing.
 ### UX and Distribution
 - Streamlit app now includes a wizard that supports ingestion, configuration, a safe pipeline run button, and results in one place.
 - Added Docker support with a single image that can run either the dashboard or the pipeline.
@@ -17,6 +21,7 @@
 - Added regression tests for deterministic seeding when `CHARM_SEED` is valid/invalid.
 - Added safeguards tests for missing/invalid job pattern configs.
 - Added regression test ensuring Sheets sync failures are tolerated.
+- Added tests for upload filename sanitization, pipeline log truncation, and LLM URL validation.
 ### Notes / Deferred
 - None.
 
