@@ -92,6 +92,48 @@ def _llm_call(prompt: str) -> str:
             if isinstance(payload, dict):
                 return str(payload.get("response", ""))
             return ""
+
+        if provider in {"hf", "hf_inference", "huggingface"}:
+            token = os.getenv("HF_TOKEN", "").strip()
+            hf_model = os.getenv("HF_MODEL", "").strip() or model
+            if not token:
+                return "(Hugging Face token missing. Set HF_TOKEN.)"
+            if not hf_model:
+                return "(Hugging Face model missing. Set HF_MODEL.)"
+
+            # Default to the hosted Inference API. Users can override with a custom endpoint URL.
+            url = os.getenv("HF_INFERENCE_URL", "").strip()
+            if not url:
+                url = f"https://api-inference.huggingface.co/models/{hf_model}"
+
+            headers = {"Authorization": f"Bearer {token}"}
+            body = {
+                "inputs": prompt,
+                "parameters": {
+                    "max_new_tokens": max_tokens,
+                    "temperature": 0.2,
+                    "return_full_text": False,
+                },
+                "options": {"wait_for_model": True},
+            }
+            http_response = requests.post(url, headers=headers, json=body, timeout=180)
+            http_response.raise_for_status()
+            payload = http_response.json()
+
+            # Common shapes include:
+            # - [{"generated_text": "..."}]
+            # - {"generated_text": "..."}
+            # - {"error": "..."}
+            if isinstance(payload, list) and payload:
+                first = payload[0]
+                if isinstance(first, dict) and "generated_text" in first:
+                    return str(first.get("generated_text", ""))
+            if isinstance(payload, dict):
+                if "generated_text" in payload:
+                    return str(payload.get("generated_text", ""))
+                if "error" in payload:
+                    return f"(Hugging Face error) {payload.get('error')}"
+            return ""
     except Exception as exc:
         return f"(LLM call failed) {type(exc).__name__}"
 

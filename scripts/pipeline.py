@@ -16,6 +16,33 @@ from scripts.scrape_jobs import scrape_sources
 from scripts.sentiment_salience import add_sentiment_and_terms
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _load_previous_jobs_csv(proc_dir: Path) -> pd.DataFrame:
+    fp = proc_dir / "jobs.csv"
+    if fp.exists():
+        try:
+            return pd.read_csv(fp)
+        except Exception:
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+
+def _load_previous_reports_csv(proc_dir: Path) -> pd.DataFrame:
+    fp = proc_dir / "reports.csv"
+    if fp.exists():
+        try:
+            return pd.read_csv(fp)
+        except Exception:
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+
 def enrich_report_metadata(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
@@ -63,25 +90,49 @@ def main():
     base = Path(__file__).resolve().parents[1]
     ensure_dirs(base)
 
-    jobs_df = scrape_sources()
-    if jobs_df is None or jobs_df.empty:
-        print("No jobs scraped; continuing with empty dataset.")
-        jobs_df = pd.DataFrame(columns=[
-            "source", "title", "company", "location", "date_posted", "job_url", "description"
-        ])
+    proc = base / "data" / "processed"
+
+    do_scrape = _env_bool("PIPELINE_SCRAPE", True)
+    do_reports = _env_bool("PIPELINE_REPORTS", True)
+    do_nlp = _env_bool("PIPELINE_NLP", True)
+    do_sentiment = _env_bool("PIPELINE_SENTIMENT", True)
+    do_geocode = _env_bool("PIPELINE_GEOCODE", True)
+
+    if do_scrape:
+        jobs_df = scrape_sources()
+        if jobs_df is None or jobs_df.empty:
+            print("No jobs scraped; continuing with empty dataset.")
+            jobs_df = pd.DataFrame(columns=[
+                "source", "title", "company", "location", "date_posted", "job_url", "description"
+            ])
+    else:
+        jobs_df = _load_previous_jobs_csv(proc)
+        if jobs_df is None or jobs_df.empty:
+            print("Scrape disabled and no prior jobs.csv found; continuing with empty dataset.")
+            jobs_df = pd.DataFrame(columns=[
+                "source", "title", "company", "location", "date_posted", "job_url", "description"
+            ])
 
     jobs_df = clean_and_dedupe(jobs_df)
-    reports_df = parse_all_reports(base / "reports")
+    if do_reports:
+        reports_df = parse_all_reports(base / "reports")
+    else:
+        reports_df = _load_previous_reports_csv(proc)
+        if reports_df is None or reports_df.empty:
+            reports_df = pd.DataFrame(columns=["report_name", "text"])
 
-    jobs_df = nlp_enrich(jobs_df, is_job=True)
-    if reports_df is not None and not reports_df.empty:
-        reports_df = nlp_enrich(reports_df, is_job=False)
-        reports_df = enrich_report_metadata(reports_df)
+    if do_nlp:
+        jobs_df = nlp_enrich(jobs_df, is_job=True)
+        if reports_df is not None and not reports_df.empty:
+            reports_df = nlp_enrich(reports_df, is_job=False)
+            reports_df = enrich_report_metadata(reports_df)
 
-    jobs_df = add_sentiment_and_terms(jobs_df, text_col="description")
-    jobs_df = geocode_locations(jobs_df)
+    if do_sentiment:
+        jobs_df = add_sentiment_and_terms(jobs_df, text_col="description")
 
-    proc = base / "data" / "processed"
+    if do_geocode:
+        jobs_df = geocode_locations(jobs_df)
+
     _save_processed_data(jobs_df, reports_df, proc)
 
     analysis = analyze_market(jobs_df, reports_df)

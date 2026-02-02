@@ -1,5 +1,7 @@
 # CHARM — Market Intelligence Engine
 
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](REPLACE_WITH_YOUR_STREAMLIT_DEMO_URL)
+
 This is a clean, runnable reference implementation for automated market analysis in the cultural resource & heritage management space (designed originally to be hosted and run on a local Synology NAS).
 
 CHARM = Cultural Heritage & Archaeological Resource Management
@@ -10,7 +12,28 @@ The point of CHARM is to guide the investment of resources and the development o
 
 ## Quick Start
 
-The fastest way to get CHARM running:
+If you want the easiest local setup, start the Streamlit app and use the built in wizard. It can ingest PDFs, run the pipeline, and show results in one place.
+
+```bash
+# 1. Clone and enter the repository
+git clone https://github.com/YOUR_USERNAME/charm-market-intelligence-engine.git
+cd charm-market-intelligence-engine
+
+# 2. Set up environment
+make setup
+
+# 3. Create a local .env file
+cp .env.example .env
+
+# 4. Allow runs from the Streamlit wizard
+# This should stay false in shared or hosted environments
+sed -i.bak 's/^ALLOW_PIPELINE_RUN=.*/ALLOW_PIPELINE_RUN=true/' .env || true
+
+# 5. Launch the app
+make run-dashboard
+```
+
+If you are comfortable with the command line and prefer to run the pipeline directly, this is the simplest path:
 
 ```bash
 # 1. Clone and enter the repository
@@ -40,6 +63,19 @@ python -c "import nltk; nltk.download('vader_lexicon')"
 # Run pipeline and dashboard
 python scripts/pipeline.py
 streamlit run dashboard/app.py
+```
+
+If you are comfortable with Docker, you can run CHARM with containers:
+
+```bash
+cp .env.example .env
+docker compose up --build dashboard
+```
+
+To run the pipeline in Docker:
+
+```bash
+docker compose run --rm pipeline
 ```
 
 > **Cost-safe dry run:** `USE_LLM` and `USE_SHEETS` default to `false` in `.env.example` so you can run the full pipeline locally without triggering OpenAI tokens or Google Sheets API calls. Flip them to `true` only after you are ready to authenticate those paid services.
@@ -137,9 +173,17 @@ Copy `.env.example` to `.env` and configure as needed. The file includes detaile
 | `USE_SQLITE` | `true` | Persist processed jobs/reports into `data/charm.db`. |
 | `USE_SHEETS` | `false` | Append jobs/reports to Google Sheets when credentials are configured. |
 | `USE_LLM` | `false` | Enable the optional LLM brief via `config/insight_prompt.md`. |
+| `ALLOW_PIPELINE_RUN` | `false` | Allow the Streamlit wizard to run the pipeline on this machine. |
+| `PIPELINE_SCRAPE` | `true` | Run the job board scraper step. |
+| `PIPELINE_REPORTS` | `true` | Parse PDFs in the `reports` folder. |
+| `PIPELINE_NLP` | `true` | Run spaCy and skills extraction. |
+| `PIPELINE_SENTIMENT` | `true` | Add sentiment scores. |
+| `PIPELINE_GEOCODE` | `true` | Geocode locations using Nominatim. |
 | `USER_AGENT` | `CHARM/1.0 (research)` | HTTP header for scrapers; include contact info. |
 | `GEOCODE_CONTACT_EMAIL` | _(empty)_ | Injected into the Nominatim UA per policy. |
 | `LLM_PROVIDER`, `LLM_MODEL` | `openai`, `gpt-4o-mini` | Choose an LLM backend/model when `USE_LLM=true`. |
+| `LLM_BASE_URL` | _(empty)_ | Base URL for OpenAI compatible providers when `LLM_PROVIDER=openai_compat`. |
+| `HF_TOKEN`, `HF_MODEL` | _(empty)_ | Use Hugging Face hosted inference when `LLM_PROVIDER=hf_inference`. |
 | `GOOGLE_SERVICE_ACCOUNT_FILE`, `GOOGLE_SHEET_ID` | _(empty)_ | Required for Sheets sync/tests. |
 | `SCRAPER_MAX_WORKERS` | `4` | Number of concurrent detail-page fetches; lower for stricter rate limits. |
 | `SCRAPER_REQUEST_INTERVAL` | `0.8` | Minimum seconds between outbound requests (global). Increase to slow the scraper. |
@@ -155,7 +199,7 @@ python scripts/pipeline.py       # run the end-to-end pipeline
 - **Python pipeline**: scraping → cleaning/dedupe → report parsing → Natural Language Processing (NLP) → sentiment → geocoding → analysis → insights → persistence.
 - **Storage**: CSVs for the dashboard + **SQLite** for durable querying; **Google Sheets** for sharing raw rows.
 - **Dashboard**: Streamlit with **Plotly** charts and a **Folium** map (heatmap + clustered markers).
-- **Large Language Model (LLM, optional)**: Brief insights; on by default (but can be turned off by user).
+- **Large Language Model (LLM, optional)**: brief insights when enabled in `.env`.
 
 ## n8n Scheduling (Synology)
 Import `n8n/charm_workflow.json` and point Execute Command to:
