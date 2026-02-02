@@ -13,6 +13,23 @@ APP_ROOT = Path(__file__).resolve().parents[1]
 if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
 
+# Simple helper to inject Lucide icon font via CDN (once per session)
+def ensure_lucide():
+    if st.session_state.get("_lucide_loaded"):
+        return
+    st.markdown(
+        """
+        <link rel="stylesheet" href="https://unpkg.com/lucide-static@0.321.0/font/lucide.css">
+        <style>
+        .step-icon { text-align:center; }
+        .step-icon i { font-size:20px; color:#111; }
+        .lucide-btn { display:flex; gap:6px; align-items:center; justify-content:center; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.session_state["_lucide_loaded"] = True
+
 import folium
 import pandas as pd
 import streamlit as st
@@ -376,11 +393,19 @@ def draw_heatmap(df: pd.DataFrame):
 
 
 def _wizard_header(mode: str, proc_dir: Path):
+    ensure_lucide()
     if mode == "demo":
         st.warning(
             "Demo mode is on. This uses demo data and simulates the pipeline run. "
             "It does not scrape, geocode, call Google Sheets, or call any LLM."
         )
+        if "wizard_started" not in st.session_state:
+            st.button(
+                "Start wizard",
+                type="primary",
+                help="Click to begin the guided flow",
+                on_click=lambda: st.session_state.__setitem__("wizard_started", True),
+            )
     else:
         st.info("Real mode is on. This reads from data/processed and can run the pipeline if enabled.")
 
@@ -402,20 +427,46 @@ def _wizard_header(mode: str, proc_dir: Path):
 def _wizard_stepper(steps: list[str]) -> int:
     if "wizard_step" not in st.session_state:
         st.session_state["wizard_step"] = 0
+    if "wizard_started" not in st.session_state:
+        st.session_state["wizard_started"] = False
 
-    c1, c2 = st.columns([3, 1])
-    with c1:
-        step = st.radio(
-            "Step",
-            options=list(range(len(steps))),
-            format_func=lambda i: steps[i],
-            index=int(st.session_state["wizard_step"]),
-            horizontal=True,
-            label_visibility="collapsed",
-        )
-        st.session_state["wizard_step"] = int(step)
-    with c2:
-        st.caption(f"{st.session_state['wizard_step'] + 1} of {len(steps)}")
+    # Mark completion states so we can lock/unlock steps but still allow back-navigation
+    if "wizard_done" not in st.session_state:
+        st.session_state["wizard_done"] = {s: False for s in steps}
+
+    # Build a horizontal stepper with explicit numbering and lock future steps until prior completed
+    icon_map = {
+        "Start": "play",
+        "Ingest": "upload",
+        "Configure": "settings",
+        "Run": "rocket",
+        "Results": "bar-chart-3",
+    }
+
+    cols = st.columns(len(steps))
+    for i, (col, name) in enumerate(zip(cols, steps)):
+        label = f"{i+1}) {name}"
+        done = st.session_state["wizard_done"].get(name, False)
+        disabled = False
+        if not st.session_state["wizard_started"] and i > 0:
+            disabled = True
+        # allow backward navigation always; forward only if all previous are done
+        if i > st.session_state["wizard_step"] and any(not st.session_state["wizard_done"][steps[j]] for j in range(i)):
+            disabled = True
+        with col:
+            st.markdown(
+                f"<div class='step-icon'><i class='lucide lucide-{icon_map.get(name,'circle-dot')}'></i></div>",
+                unsafe_allow_html=True,
+            )
+            clicked = st.button(label, disabled=disabled, use_container_width=True)
+            status = "✅" if done else ("▶️" if st.session_state["wizard_step"] == i else "🔒" if disabled else "…")
+            st.caption(status)
+            if clicked:
+                st.session_state["wizard_started"] = True
+                st.session_state["wizard_step"] = i
+
+    st.progress((st.session_state["wizard_step"] + 1) / len(steps))
+    st.caption(f"Step {st.session_state['wizard_step'] + 1} of {len(steps)} — complete each in order; you can revisit finished steps anytime.")
     return int(st.session_state["wizard_step"])
 
 
@@ -424,6 +475,7 @@ def _render_ingest_step(mode: str):
     st.write("Upload PDF reports. In real mode they go into the reports folder.")
     if mode == "demo":
         st.write("In demo mode uploads are accepted so you can see the flow, but they are not processed.")
+    st.caption("Complete this step, then click Next to move on. You can return later to adjust uploads.")
 
     rpt_dir = reports_dir()
     rpt_dir.mkdir(parents=True, exist_ok=True)
@@ -450,6 +502,8 @@ def _render_ingest_step(mode: str):
                 continue
         if saved:
             st.success(f"Saved {saved} file(s).")
+            if "wizard_done" in st.session_state:
+                st.session_state["wizard_done"]["Ingest"] = True
 
     pdfs = sorted([p.name for p in rpt_dir.glob("*.pdf")])
     if not pdfs:
@@ -466,6 +520,7 @@ def _render_config_step(mode: str):
     st.write("Choose what to run. Defaults match the full pipeline.")
     if mode == "demo":
         st.write("These settings are shown for demonstration. The demo run is simulated.")
+    st.caption("Toggle the stages you want. Hit Next when satisfied; you can come back to tweak.")
 
     defaults = {
         "PIPELINE_SCRAPE": True,
@@ -515,6 +570,8 @@ def _render_config_step(mode: str):
     cfg["HF_MODEL"] = st.text_input("Hugging Face model", value=os.getenv("HF_MODEL", ""), disabled=mode == "demo")
 
     st.session_state["wizard_config"] = cfg
+    if "wizard_done" in st.session_state:
+        st.session_state["wizard_done"]["Configure"] = True
 
 
 def _simulate_run():
@@ -537,9 +594,16 @@ def _simulate_run():
         time.sleep(0.35)
     status.write("Simulation complete. Loading demo outputs.")
 
+    # Mark Run and previous steps as done so Results unlocks
+    for s in ["Start", "Ingest", "Configure", "Run"]:
+        if "wizard_done" in st.session_state:
+            st.session_state["wizard_done"][s] = True
+
 
 def _render_run_step(mode: str):
     st.subheader("Run")
+
+    st.caption("Runs after Ingest and Configure. You can still go back to change them before running.")
 
     if mode == "demo":
         st.write("This is a simulation. It shows the same steps as a real run.")
@@ -547,6 +611,9 @@ def _render_run_step(mode: str):
             _simulate_run()
             st.cache_data.clear()
             st.success("Done. Go to Results.")
+            if "wizard_done" in st.session_state:
+                st.session_state["wizard_done"]["Run"] = True
+                st.session_state["wizard_step"] = 4  # move to Results
         return
 
     if not allow_pipeline_run():
@@ -601,6 +668,9 @@ def _render_run_step(mode: str):
 
 def _render_results_step(proc_dir: Path):
     st.subheader("Results")
+    st.caption("Review outputs here. Use the stepper above to jump back and adjust previous steps.")
+    if "wizard_done" in st.session_state:
+        st.session_state["wizard_done"]["Results"] = True
     df = load_jobs(proc_dir)
     if df.empty:
         st.info("No data yet. Run the pipeline to generate jobs.csv.")
@@ -672,10 +742,18 @@ def main():
         steps = ["Start", "Ingest", "Configure", "Run", "Results"]
         idx = _wizard_stepper(steps)
 
+        # Nav guards: enforce sequential flow but allow revisits of completed steps
+        if idx > 0 and not st.session_state.get("wizard_started"):
+            st.info("Click Start wizard to begin.")
+            return
+
         if idx == 0:
             st.subheader("Start")
             st.write("This wizard guides you through ingestion, processing, and visualization.")
-            st.write("Use the next steps to upload reports, configure a run, and view results.")
+            st.write("Click 'Start wizard' to begin, then follow the numbered steps.")
+            st.caption("You can return to any completed step to make changes.")
+            if "wizard_done" in st.session_state:
+                st.session_state["wizard_done"]["Start"] = True
         elif idx == 1:
             _render_ingest_step(mode)
         elif idx == 2:
