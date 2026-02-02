@@ -531,6 +531,10 @@ def _render_run_step(mode: str):
         )
         return
 
+    if not st.button("Run pipeline", type="primary"):
+        st.write("When you run, outputs will be written into data/processed.")
+        return
+
     ok, msg = acquire_lock(BASE)
     if not ok:
         st.warning(msg)
@@ -552,6 +556,7 @@ def _render_run_step(mode: str):
             "LLM_BASE_URL": str(cfg.get("LLM_BASE_URL", os.getenv("LLM_BASE_URL", ""))),
             "OLLAMA_BASE_URL": str(cfg.get("OLLAMA_BASE_URL", os.getenv("OLLAMA_BASE_URL", ""))),
             "HF_MODEL": str(cfg.get("HF_MODEL", os.getenv("HF_MODEL", ""))),
+            "HF_INFERENCE_URL": os.getenv("HF_INFERENCE_URL", ""),
         }
 
         st.write("Running the pipeline. This can take a while.")
