@@ -29,7 +29,7 @@ Security hardening for Streamlit file ingest, LLM endpoint validation, and dashb
 ## Commands Executed
 - `git status -sb`
 - `make test` (fails on Python 3.9; project requires 3.10+)
+- `.venv/bin/python -m ruff check scripts/ dashboard/ tests/`
 
 ## README Pending Items
 - README.* unchanged (read-only per instructions). No pending proposals.
-

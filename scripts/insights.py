@@ -81,7 +81,6 @@ def _llm_call(prompt: str) -> str:
         if provider == "ollama":
             base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
             # Basic SSRF protection: only allow localhost/127.0.0.1 for Ollama
-            from urllib.parse import urlparse
             parsed = urlparse(base)
             allowed_hosts = {"localhost", "127.0.0.1", "::1"}
             if parsed.hostname not in allowed_hosts:

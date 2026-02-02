@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 
-
 BASE = Path(__file__).resolve().parents[1]
 DEMO_DIR = BASE / "demo"
 PROC_DIR = DEMO_DIR / "processed"

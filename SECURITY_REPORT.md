@@ -24,6 +24,7 @@
 | --- | --- | --- | --- |
 | git status -sb | Baseline cleanliness | pass | clean before edits |
 | make test | Existing test suite | fail | Python 3.9 venv incompatible with py3.10 `|` types; tests aborted at collection. Code changes unrelated. |
+| .venv/bin/python -m ruff check scripts/ dashboard/ tests/ | Lint/sec style gate | pass | All lint findings resolved |
 
 ## OWASP Top 10:2025 Matrix
 | Item | Applicable | Status | Evidence | Findings | Remediation Summary |
@@ -41,4 +42,3 @@
 
 ## OWASP Mobile Top 10:2024
 - Not applicable (no mobile code detected).
-

@@ -1,5 +1,3 @@
-import os
-
 from scripts.insights import _llm_call
 
 
