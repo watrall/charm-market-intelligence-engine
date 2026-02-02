@@ -13,6 +13,7 @@ import pandas as pd
 import streamlit as st
 from folium.plugins import HeatMap, MarkerCluster
 from streamlit_folium import st_folium
+from dashboard.pipeline_runner import acquire_lock, allow_pipeline_run, release_lock, run_pipeline
 
 # Ensure the repo root is on sys.path so `dashboard.*` imports work when run via Streamlit
 APP_ROOT = Path(__file__).resolve().parents[1]
