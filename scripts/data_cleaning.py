@@ -94,10 +94,10 @@ def _compile_entries(entries: Sequence[object], bucket: str, errors: list[str]) 
             continue
         compiled.append(f"(?:{pattern})")
     try:
-        return re.compile("|".join(compiled), re.I) if compiled else re.compile(r"(?!x)")
+        return re.compile("|".join(compiled), re.I) if compiled else re.compile(r"(?!)")
     except re.error as exc:
         errors.append(f"{bucket}: invalid regex ({exc}); skipped bucket")
-        return re.compile(r"(?!x)")
+        return re.compile(r"(?!)")
 
 
 def _patterns_path(config_path: Path | None = None) -> Path:

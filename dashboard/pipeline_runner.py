@@ -77,7 +77,7 @@ def run_pipeline(base: Path, env_overrides: dict[str, str] | None = None) -> Run
 
     Uses the current interpreter so this works in local venvs and Docker.
     """
-    max_output_chars = 200_000
+    max_output_chars = 10_000
     env = os.environ.copy()
     if env_overrides:
         env.update({k: str(v) for k, v in env_overrides.items() if v is not None})
