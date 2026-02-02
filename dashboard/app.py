@@ -454,18 +454,22 @@ def _wizard_stepper(steps: list[str]) -> int:
         if i > st.session_state["wizard_step"] and any(not st.session_state["wizard_done"][steps[j]] for j in range(i)):
             disabled = True
         with col:
-            st.markdown(
-                f"<div class='step-icon'><i class='lucide lucide-{icon_map.get(name,'circle-dot')}'></i></div>",
-                unsafe_allow_html=True,
-            )
-            clicked = st.button(label, disabled=disabled, use_container_width=True)
+            ic, btn = st.columns([1, 3])
+            with ic:
+                st.markdown(
+                    f"<div class='step-icon' style='padding-top:6px'><i class='lucide lucide-{icon_map.get(name,'circle-dot')}'></i></div>",
+                    unsafe_allow_html=True,
+                )
+            with btn:
+                clicked = st.button(label, disabled=disabled, use_container_width=True)
             status = "✅" if done else ("▶️" if st.session_state["wizard_step"] == i else "🔒" if disabled else "…")
             st.caption(status)
             if clicked:
                 st.session_state["wizard_started"] = True
                 st.session_state["wizard_step"] = i
 
-    st.progress((st.session_state["wizard_step"] + 1) / len(steps))
+    done_count = sum(1 for v in st.session_state["wizard_done"].values() if v)
+    st.progress(done_count / len(steps))
     st.caption(f"Step {st.session_state['wizard_step'] + 1} of {len(steps)} — complete each in order; you can revisit finished steps anytime.")
     return int(st.session_state["wizard_step"])
 
@@ -474,7 +478,7 @@ def _render_ingest_step(mode: str):
     st.subheader("Ingest")
     st.write("Upload PDF reports. In real mode they go into the reports folder.")
     if mode == "demo":
-        st.write("In demo mode uploads are accepted so you can see the flow, but they are not processed.")
+        st.write("In demo mode you can skip uploads and use bundled demo data.")
     st.caption("Complete this step, then click Next to move on. You can return later to adjust uploads.")
 
     rpt_dir = reports_dir()
@@ -504,6 +508,13 @@ def _render_ingest_step(mode: str):
             st.success(f"Saved {saved} file(s).")
             if "wizard_done" in st.session_state:
                 st.session_state["wizard_done"]["Ingest"] = True
+
+    if mode == "demo":
+        if st.button("Use demo data / skip upload", type="secondary"):
+            if "wizard_done" in st.session_state:
+                st.session_state["wizard_done"]["Ingest"] = True
+            st.success("Using bundled demo data. Proceed to Configure.")
+            st.session_state["wizard_step"] = 2
 
     pdfs = sorted([p.name for p in rpt_dir.glob("*.pdf")])
     if not pdfs:
@@ -598,6 +609,8 @@ def _simulate_run():
     for s in ["Start", "Ingest", "Configure", "Run"]:
         if "wizard_done" in st.session_state:
             st.session_state["wizard_done"][s] = True
+    if "wizard_step" in st.session_state:
+        st.session_state["wizard_step"] = 4
 
 
 def _render_run_step(mode: str):
@@ -613,7 +626,6 @@ def _render_run_step(mode: str):
             st.success("Done. Go to Results.")
             if "wizard_done" in st.session_state:
                 st.session_state["wizard_done"]["Run"] = True
-                st.session_state["wizard_step"] = 4  # move to Results
         return
 
     if not allow_pipeline_run():
