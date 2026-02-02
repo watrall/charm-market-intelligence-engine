@@ -12,10 +12,22 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
+from typing import TypedDict
 
 BASE = Path(__file__).resolve().parents[1]
 DEMO_DIR = BASE / "demo"
 PROC_DIR = DEMO_DIR / "processed"
+
+
+class Analysis(TypedDict):
+    schema_version: str
+    num_jobs: int
+    unique_employers: int
+    geocoded: int
+    top_skills: list[tuple[str, int]]
+    top_employers: list[tuple[str, int]]
+    report_skills: list[str]
+    run_timestamp: str
 
 
 @dataclass(frozen=True)
@@ -226,7 +238,7 @@ def generate(n_jobs: int = 240, seed: int = 42) -> None:
         if j.get("lat") and j.get("lon"):
             geocoded += 1
 
-    analysis = {
+    analysis: Analysis = {
         "schema_version": "1.0",
         "num_jobs": len(jobs),
         "unique_employers": len(employer_counts),

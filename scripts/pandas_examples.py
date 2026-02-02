@@ -39,20 +39,19 @@ def _explode_skills(df: pd.DataFrame, col: str = "skills") -> pd.DataFrame:
 
 def top_skills(df: pd.DataFrame, n=25) -> pd.DataFrame:
     ex = _explode_skills(df)
-    return (ex.groupby("skill", as_index=False)
-             .size()
-             .rename(columns={"size":"count"})
-             .sort_values("count", ascending=False)
-             .head(n))
+    size_series = ex.groupby("skill").size()
+    size_df = size_series.reset_index()
+    size_df.columns = ["skill", "count"]
+    return size_df.sort_values("count", ascending=False).head(n)
 
 def monthly_postings(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
     d["date_posted"] = pd.to_datetime(d["date_posted"], errors="coerce")
     d["month"] = d["date_posted"].dt.to_period("M").astype(str)
-    return (d.groupby("month", as_index=False)
-             .size()
-             .rename(columns={"size":"postings"})
-             .sort_values("month"))
+    size_series = d.groupby("month").size()
+    size_df = size_series.reset_index()
+    size_df.columns = ["month", "postings"]
+    return size_df.sort_values("month")
 
 _STATE_RE = re.compile(r"\b([A-Z]{2})\b\s*$")
 def jobs_by_state(df: pd.DataFrame) -> pd.DataFrame:
@@ -63,11 +62,10 @@ def jobs_by_state(df: pd.DataFrame) -> pd.DataFrame:
         return m.group(1) if m else ""
     d = df.copy()
     d["state"] = d["location"].map(state_of)
-    return (d.query("state != ''")
-             .groupby("state", as_index=False)
-             .size()
-             .rename(columns={"size":"postings"})
-             .sort_values("postings", ascending=False))
+    size_series = d.query("state != ''").groupby("state").size()
+    size_df = size_series.reset_index()
+    size_df.columns = ["state", "postings"]
+    return size_df.sort_values("postings", ascending=False)
 
 def salary_by_skill(df: pd.DataFrame, min_n=3) -> pd.DataFrame:
     ex = _explode_skills(df)

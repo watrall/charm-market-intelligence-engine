@@ -208,13 +208,18 @@ def clean_and_dedupe(df: pd.DataFrame) -> pd.DataFrame:
     df["dedupe_key"] = [_hash_row(r["title"], r["company"], r["description"]) for _, r in df.iterrows()]
     df = df.drop_duplicates(subset=["job_url"]).drop_duplicates(subset=["dedupe_key"])
 
-    salary_tuples = df["description"].fillna("").map(extract_salary).tolist()
+    salary_tuples: list[tuple[float | None, float | None, str | None]] = [
+        extract_salary(desc) for desc in df["description"].fillna("").astype(str).tolist()
+    ]
     if salary_tuples:
-        df["salary_min"], df["salary_max"], df["currency"] = zip(*salary_tuples)
+        mins, maxs, currencies = zip(*salary_tuples)
+        df["salary_min"] = list(mins)
+        df["salary_max"] = list(maxs)
+        df["currency"] = list(currencies)
     else:
-        df["salary_min"] = []
-        df["salary_max"] = []
-        df["currency"] = []
+        df["salary_min"] = [None] * len(df)
+        df["salary_max"] = [None] * len(df)
+        df["currency"] = [None] * len(df)
 
     cities, states = zip(*[ _parse_city_state(loc) for loc in df["location"].tolist() ]) if len(df) else ([], [])
     if len(df):
