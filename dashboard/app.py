@@ -50,8 +50,6 @@ def app_mode() -> str:
     """Return 'demo' or 'real'."""
     if _truthy(os.getenv("DEMO_MODE")):
         return "demo"
-    if (DEMO_DATA_DIR / "jobs.csv").exists():
-        return "demo"
     return "real"
 
 

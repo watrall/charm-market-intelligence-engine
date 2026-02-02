@@ -9,4 +9,6 @@ __pycache__
 data
 reports
 secrets
+# Keep demo assets in the repo for Streamlit Cloud, but exclude from docker builds
+# to keep images small. Streamlit Cloud reads directly from git.
 demo

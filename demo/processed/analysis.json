@@ -1,0 +1,188 @@
+{
+  "schema_version": "1.0",
+  "num_jobs": 240,
+  "unique_employers": 14,
+  "geocoded": 240,
+  "top_skills": [
+    [
+      "Section 106",
+      79
+    ],
+    [
+      "NEPA",
+      77
+    ],
+    [
+      "ArcGIS",
+      14
+    ],
+    [
+      "State Environmental Policy Act",
+      13
+    ],
+    [
+      "Section 4(f) DOT Act",
+      13
+    ],
+    [
+      "Adobe Photoshop",
+      13
+    ],
+    [
+      "Conservation Management Plan",
+      12
+    ],
+    [
+      "Historic Materials Conservation",
+      12
+    ],
+    [
+      "Phase I Archaeological Survey",
+      12
+    ],
+    [
+      "Community Outreach & Interpretation",
+      12
+    ],
+    [
+      "Curation Agreements",
+      11
+    ],
+    [
+      "Quality Assurance / Quality Control",
+      11
+    ],
+    [
+      "Paleoethnobotany/Archaeobotany",
+      11
+    ],
+    [
+      "Archaeological Data Recovery Plan",
+      11
+    ],
+    [
+      "Residue/Use-Wear Analysis",
+      11
+    ],
+    [
+      "Crew Chief / Field Director",
+      11
+    ],
+    [
+      "Omeka S (Digital Exhibits)",
+      10
+    ],
+    [
+      "Deaccessioning Procedures",
+      10
+    ],
+    [
+      "Programmatic Agreements (PAs)",
+      10
+    ],
+    [
+      "Preventive Conservation & Rehousing",
+      10
+    ],
+    [
+      "MIDAS Heritage Standard",
+      10
+    ],
+    [
+      "Total Station Survey",
+      10
+    ],
+    [
+      "LiDAR Processing",
+      10
+    ],
+    [
+      "Digitization & Georeferencing",
+      10
+    ],
+    [
+      "PastPerfect CMS",
+      10
+    ],
+    [
+      "Technical Editing",
+      10
+    ],
+    [
+      "Program Evaluation (KPIs/Outcomes)",
+      9
+    ],
+    [
+      "Co-Management Agreements",
+      9
+    ],
+    [
+      "Cost Distance / Least-Cost Path",
+      9
+    ],
+    [
+      "NRHP Evaluation Criteria",
+      9
+    ]
+  ],
+  "top_employers": [
+    [
+      "Heritage Research Group",
+      18
+    ],
+    [
+      "Cultural Resource Consultants",
+      18
+    ],
+    [
+      "Western CRM Partners",
+      17
+    ],
+    [
+      "ArchaeoLab Services",
+      17
+    ],
+    [
+      "Preservation Strategy Studio",
+      17
+    ],
+    [
+      "GeoCultural Analytics",
+      17
+    ],
+    [
+      "Regional Heritage Associates",
+      17
+    ],
+    [
+      "Frontier Cultural Resources",
+      17
+    ],
+    [
+      "Sagebrush Archaeology",
+      17
+    ],
+    [
+      "Bay Area Preservation",
+      17
+    ],
+    [
+      "Capitol Heritage Advisors",
+      17
+    ],
+    [
+      "Great Lakes CRM",
+      17
+    ],
+    [
+      "High Plains Cultural Resources",
+      17
+    ],
+    [
+      "Sunbelt Heritage Solutions",
+      17
+    ]
+  ],
+  "report_skills": [],
+  "run_timestamp": "2026-02-02T12:00:00Z"
+}
