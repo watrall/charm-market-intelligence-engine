@@ -1,6 +1,6 @@
 # CHARM — Market Intelligence Engine
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/watrall/charm-market-intelligence-engine?logo=docker&label=Docker%20Hub)](https://hub.docker.com/r/watrall/charm-market-intelligence-engine)
+[![Docker Image Version](https://img.shields.io/docker/v/watrall/charm-market-intelligence-engine?logo=docker&label=Docker%20Hub&sort=semver)](https://hub.docker.com/r/watrall/charm-market-intelligence-engine)
 
 This is a clean, runnable reference implementation for automated market analysis in the cultural resource & heritage management space (designed originally to be hosted and run on a local Synology NAS).
 
