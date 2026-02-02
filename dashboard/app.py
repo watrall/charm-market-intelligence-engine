@@ -4,8 +4,14 @@ import html
 import json
 import os
 import re
+import sys
 import time
 from pathlib import Path
+
+# Ensure the repo root is on sys.path so `dashboard.*` imports work when run via Streamlit
+APP_ROOT = Path(__file__).resolve().parents[1]
+if str(APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(APP_ROOT))
 
 import folium
 import pandas as pd
