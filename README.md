@@ -27,7 +27,7 @@ cp .env.example .env
 
 # 4. Allow runs from the Streamlit wizard
 # This should stay false in shared or hosted environments
-sed -i.bak 's/^ALLOW_PIPELINE_RUN=.*/ALLOW_PIPELINE_RUN=true/' .env || true
+# Open .env and set ALLOW_PIPELINE_RUN=true
 
 # 5. Launch the app
 make run-dashboard
