@@ -4,6 +4,7 @@ import html
 import json
 import os
 import re
+import sys
 import time
 from pathlib import Path
 
@@ -13,7 +14,16 @@ import streamlit as st
 from folium.plugins import HeatMap, MarkerCluster
 from streamlit_folium import st_folium
 
-from dashboard.pipeline_runner import acquire_lock, allow_pipeline_run, release_lock, run_pipeline
+APP_ROOT = Path(__file__).resolve().parents[1]
+if str(APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(APP_ROOT))
+
+from dashboard.pipeline_runner import (  # noqa: E402
+    acquire_lock,
+    allow_pipeline_run,
+    release_lock,
+    run_pipeline,
+)
 
 
 # Simple helper to inject Lucide icon font via CDN (once per session)
