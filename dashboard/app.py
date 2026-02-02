@@ -788,7 +788,7 @@ def main():
     configure_explore_page()
     st.title("CHARM Market Intelligence — Explore")
     st.caption("Browse existing results. To ingest or re-run the pipeline, open Ingest & Analyze.")
-    st.page_link("pages/01_Ingest_and_Analyze.py", label="Go to Ingest & Analyze", icon="➡️")
+    st.page_link("01_Ingest_and_Analyze.py", label="Go to Ingest & Analyze", icon="➡️")
 
     proc_dir = processed_dir()
     _render_results_step(proc_dir)
