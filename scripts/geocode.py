@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
@@ -28,9 +30,9 @@ def _load_cache(path: Path) -> pd.DataFrame:
         return pd.DataFrame(columns=["location", "lat", "lon"])
 
 
-def geocode_locations(df: pd.DataFrame) -> pd.DataFrame:
+def geocode_locations(df: pd.DataFrame, cache_path: Path | None = None) -> pd.DataFrame:
     base = Path(__file__).resolve().parents[1]
-    cache_path = base / "data" / "geocache.csv"
+    cache_path = cache_path or (base / "data" / "geocache.csv")
     cache = _load_cache(cache_path)
 
     contact = os.getenv("GEOCODE_CONTACT_EMAIL", "").strip()
@@ -46,7 +48,13 @@ def geocode_locations(df: pd.DataFrame) -> pd.DataFrame:
     known = {row["location"]: (row["lat"], row["lon"]) for _, row in cache.iterrows()}
     new_entries = []
 
-    for loc in [loc for loc in df["location_norm"].unique() if loc and loc not in known]:
+    max_new = int(os.getenv("GEOCODE_MAX_NEW", "500") or "500")
+    new_candidates = [loc for loc in df["location_norm"].unique() if loc and loc not in known]
+    if len(new_candidates) > max_new:
+        print(f"Geocode limit hit: truncating from {len(new_candidates)} to {max_new} new locations")
+        new_candidates = new_candidates[:max_new]
+
+    for loc in new_candidates:
         try:
             result = geocode(loc)
             lat = result.latitude if result else None

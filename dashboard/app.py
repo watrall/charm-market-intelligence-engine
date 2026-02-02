@@ -39,8 +39,7 @@ from streamlit_folium import st_folium
 from dashboard.pipeline_runner import acquire_lock, allow_pipeline_run, release_lock, run_pipeline
 
 SAFE_UPLOAD_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
-
-st.set_page_config(page_title="CHARM Dashboard", layout="wide")
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB per uploaded file to avoid disk exhaustion
 
 BASE = Path(__file__).resolve().parents[1]
 REAL_DATA_DIR = BASE / "data" / "processed"
@@ -80,6 +79,51 @@ def sanitize_upload_name(filename: str) -> str:
     return name or "upload.bin"
 
 
+def _upload_size(upload) -> int | None:
+    """Best-effort size extraction without consuming the stream."""
+    size = getattr(upload, "size", None)
+    if size is not None:
+        try:
+            return int(size)
+        except Exception:
+            return None
+    try:
+        return len(upload.getbuffer())
+    except Exception:
+        return None
+
+
+def save_uploads(uploaded, rpt_dir: Path, max_bytes: int = MAX_UPLOAD_BYTES) -> tuple[int, list[tuple[str, int]]]:
+    """Persist uploaded PDFs with size and name safety.
+
+    Returns (saved_count, skipped[(name, size)]).
+    """
+    saved = 0
+    skipped: list[tuple[str, int]] = []
+    for f in uploaded:
+        size = _upload_size(f) or 0
+        if size and size > max_bytes:
+            skipped.append((getattr(f, "name", "upload.pdf"), size))
+            continue
+        try:
+            safe_name = sanitize_upload_name(getattr(f, "name", "upload.pdf"))
+            out = rpt_dir / safe_name
+            if out.exists():
+                stem, suffix = out.stem, out.suffix
+                counter = 1
+                while True:
+                    candidate = rpt_dir / f"{stem}-{counter}{suffix}"
+                    if not candidate.exists():
+                        out = candidate
+                        break
+                    counter += 1
+            out.write_bytes(f.getbuffer())
+            saved += 1
+        except Exception:
+            continue
+    return saved, skipped
+
+
 def app_mode() -> str:
     """Return 'demo' or 'real'."""
     if _truthy(os.getenv("DEMO_MODE")):
@@ -116,6 +160,14 @@ def _coerce_skills(value) -> list[str]:
         tokens = re.split(r"[;|,]", raw)
         return [t.strip(" []'\"") for t in tokens if t.strip(" []'\"")]
     return []
+
+
+def configure_explore_page():
+    """Set page config once when rendering the Explore surface."""
+    if st.session_state.get("_page_configured"):
+        return
+    st.set_page_config(page_title="CHARM Dashboard — Explore", layout="wide")
+    st.session_state["_page_configured"] = True
 
 
 @st.cache_data(show_spinner=False)
@@ -401,7 +453,7 @@ def _wizard_header(mode: str, proc_dir: Path):
         )
         if "wizard_started" not in st.session_state:
             st.button(
-                "Start wizard",
+                "Start Ingest & Analyze",
                 type="primary",
                 help="Click to begin the guided flow",
                 on_click=lambda: st.session_state.__setitem__("wizard_started", True),
@@ -485,29 +537,15 @@ def _render_ingest_step(mode: str):
     rpt_dir.mkdir(parents=True, exist_ok=True)
 
     uploaded = st.file_uploader("Upload PDF reports", type=["pdf"], accept_multiple_files=True)
-    saved = 0
     if uploaded:
-        for f in uploaded:
-            try:
-                safe_name = sanitize_upload_name(f.name)
-                out = rpt_dir / safe_name
-                if out.exists():
-                    stem, suffix = out.stem, out.suffix
-                    counter = 1
-                    while True:
-                        candidate = rpt_dir / f"{stem}-{counter}{suffix}"
-                        if not candidate.exists():
-                            out = candidate
-                            break
-                        counter += 1
-                out.write_bytes(f.getbuffer())
-                saved += 1
-            except Exception:
-                continue
+        saved, skipped = save_uploads(uploaded, rpt_dir)
         if saved:
             st.success(f"Saved {saved} file(s).")
             if "wizard_done" in st.session_state:
                 st.session_state["wizard_done"]["Ingest"] = True
+        if skipped:
+            too_big = ", ".join([f"{name} ({size/1_048_576:.1f} MB)" for name, size in skipped])
+            st.warning(f"Skipped oversized file(s): {too_big}. Max per file is {MAX_UPLOAD_BYTES/1_048_576:.0f} MB.")
 
     if mode == "demo":
         if st.button("Use demo data / skip upload", type="secondary"):
@@ -631,7 +669,7 @@ def _render_run_step(mode: str):
     if not allow_pipeline_run():
         st.warning(
             "Running the pipeline from the app is disabled. "
-            "Set ALLOW_PIPELINE_RUN=true in your .env file if you want to run from the wizard."
+            "Set ALLOW_PIPELINE_RUN=true in your .env file if you want to run from Ingest & Analyze."
         )
         return
 
@@ -742,42 +780,13 @@ def _render_results_step(proc_dir: Path):
 
 
 def main():
-    st.title("CHARM Market Intelligence")
+    configure_explore_page()
+    st.title("CHARM Market Intelligence — Explore")
+    st.caption("Browse existing results. To ingest or re-run the pipeline, open Ingest & Analyze.")
+    st.page_link("pages/01_Ingest_and_Analyze.py", label="Go to Ingest & Analyze", icon="➡️")
 
-    mode = app_mode()
     proc_dir = processed_dir()
-
-    tabs = st.tabs(["Wizard", "Explore"])
-    with tabs[0]:
-        _wizard_header(mode, proc_dir)
-        st.divider()
-        steps = ["Start", "Ingest", "Configure", "Run", "Results"]
-        idx = _wizard_stepper(steps)
-
-        # Nav guards: enforce sequential flow but allow revisits of completed steps
-        if idx > 0 and not st.session_state.get("wizard_started"):
-            st.info("Click Start wizard to begin.")
-            return
-
-        if idx == 0:
-            st.subheader("Start")
-            st.write("This wizard guides you through ingestion, processing, and visualization.")
-            st.write("Click 'Start wizard' to begin, then follow the numbered steps.")
-            st.caption("You can return to any completed step to make changes.")
-            if "wizard_done" in st.session_state:
-                st.session_state["wizard_done"]["Start"] = True
-        elif idx == 1:
-            _render_ingest_step(mode)
-        elif idx == 2:
-            _render_config_step(mode)
-        elif idx == 3:
-            _render_run_step(mode)
-        else:
-            _render_results_step(proc_dir)
-
-    with tabs[1]:
-        st.caption("Explore the current dataset.")
-        _render_results_step(proc_dir)
+    _render_results_step(proc_dir)
 
 
 if __name__ == "__main__":

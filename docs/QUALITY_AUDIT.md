@@ -15,6 +15,9 @@
 ## Findings
 | Severity | Issue | Status | Notes |
 | --- | --- | --- | --- |
+| P1 | Streamlit multipage import called `set_page_config` twice, crashing the Ingest page | Fixed | Config now idempotent and only set inside Explore entrypoint (`dashboard/app.py`) |
+| P1 | Wizard uploads allowed unbounded file sizes, risking disk exhaustion on hosted deploys | Fixed | Added 25 MB per-file cap with explicit skips and helper for safe persistence (`dashboard/app.py`) |
+| P1 | Geocoder could issue unbounded Nominatim lookups, risking throttling/ban | Fixed | New `GEOCODE_MAX_NEW` limit (default 500) truncates new requests and logs when hit (`scripts/geocode.py`) |
 | P1 | Non-numeric `CHARM_SEED` crashes analysis seeding | Fixed | `_get_seed` now defaults safely with warning |
 | P1 | Missing/invalid `config/job_patterns.json` stops classification pipeline | Fixed | Pattern loader now falls back to empty patterns with warnings and cache reset |
 | P1 | Google Sheets sync exceptions halt pipeline | Fixed | Sync errors now logged and skipped without aborting run |
@@ -24,6 +27,9 @@
 | P2 | SQLite connection left open after pipeline completes | Fixed | `_persist_to_sqlite` now closes connections via `finally` |
 
 ## Fixes Applied
+- Streamlit page config is now applied only once per session to prevent multipage crashes (dashboard/app.py).
+- Ingest uploads enforce a 25 MB cap, skipping oversize files with user feedback; extracted helper for safer saves (dashboard/app.py; tests/test_dashboard_upload_limits.py).
+- Geocoding is bounded via `GEOCODE_MAX_NEW` and accepts an injectable cache path for safer tests; added limit regression test (scripts/geocode.py; tests/test_geocode_limits.py).
 - Hardened `_get_seed` against invalid env input to keep analysis deterministic (scripts/analyze.py); added regression tests (tests/test_analyze.py).
 - Pattern loading tolerates missing/invalid configs via env override and cache reset helpers (scripts/data_cleaning.py); added safeguards tests (tests/test_data_cleaning.py).
 - Google Sheets sync now catches API/runtime errors so optional integrations cannot crash pipeline (scripts/pipeline.py); regression test added (tests/test_pipeline.py).
@@ -37,3 +43,4 @@
 - Run `make lint` and `make typecheck` for static checks.
 - Run `make run-pipeline` (requires data/services) for end-to-end smoke.
 - Ensure the virtualenv uses Python 3.10+ (pyproject requirement); a 3.9 venv will fail to import due to `|` unions.
+- Targeted checks run during this audit: `pytest tests/test_dashboard_upload_limits.py tests/test_geocode_limits.py`.

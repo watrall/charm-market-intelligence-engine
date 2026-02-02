@@ -2,6 +2,9 @@
 
 ## 2026-02-02 — Stability hardening & guardrails
 ### Stability
+- Multipage Streamlit no longer crashes on import; page config is set only inside the Explore entrypoint.
+- Wizard uploads now enforce a 25 MB per-file cap to prevent disk exhaustion on hosted deploys.
+- Geocoding caps new Nominatim lookups via `GEOCODE_MAX_NEW` to avoid throttling.
 - `CHARM_SEED` parsing now defaults to 42 with a warning instead of crashing when the env var is non-numeric.
 - Pattern classification no longer crashes when `config/job_patterns.json` is missing or malformed; it now falls back with warnings.
 - Google Sheets sync errors are now caught and logged so the pipeline finishes even if Sheets is unavailable.
@@ -9,6 +12,7 @@
 - Dashboard pipeline runs cap captured output and mark truncation to prevent unbounded memory growth.
 - OpenAI-compatible and Hugging Face inference URLs are validated to allow only http/https schemes, blocking file/ftp SSRF vectors.
 ### Maintainability
+- Extracted shared upload-save helper and injectable geocode cache path for safer testing and reuse.
 - Pattern loader now honors `JOB_PATTERNS_PATH` overrides and exposes a cache reset helper for safer tests/overrides.
 - SQLite persistence closes connections via `finally` to avoid leaked file handles during pipeline runs.
 - Upload handling now uses a shared sanitizer for reuse and easier testing.
@@ -18,6 +22,7 @@
 ### LLM Flexibility
 - Added Hugging Face hosted inference option for the LLM brief in addition to OpenAI, Ollama, and OpenAI compatible providers.
 ### Testing/Verification
+- Added regression tests for upload size enforcement and geocode request limits.
 - Added regression tests for deterministic seeding when `CHARM_SEED` is valid/invalid.
 - Added safeguards tests for missing/invalid job pattern configs.
 - Added regression test ensuring Sheets sync failures are tolerated.
