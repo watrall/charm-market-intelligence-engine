@@ -1,11 +1,5 @@
 from __future__ import annotations
 
-import folium
-import pandas as pd
-import streamlit as st
-from folium.plugins import HeatMap, MarkerCluster
-from streamlit_folium import st_folium
-
 import html
 import json
 import os
@@ -14,10 +8,11 @@ import sys
 import time
 from pathlib import Path
 
-# Ensure the repo root is on sys.path so `dashboard.*` imports work when run via Streamlit
-APP_ROOT = Path(__file__).resolve().parents[1]
-if str(APP_ROOT) not in sys.path:
-    sys.path.insert(0, str(APP_ROOT))
+import folium
+import pandas as pd
+import streamlit as st
+from folium.plugins import HeatMap, MarkerCluster
+from streamlit_folium import st_folium
 
 
 # Simple helper to inject Lucide icon font via CDN (once per session)
