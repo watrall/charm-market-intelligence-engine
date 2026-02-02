@@ -19,9 +19,6 @@ APP_ROOT = Path(__file__).resolve().parents[1]
 if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
 
-from dashboard.pipeline_runner import acquire_lock, allow_pipeline_run, release_lock, run_pipeline
-
-
 # Simple helper to inject Lucide icon font via CDN (once per session)
 def ensure_lucide():
     if st.session_state.get("_lucide_loaded"):
@@ -37,7 +34,9 @@ def ensure_lucide():
         """,
         unsafe_allow_html=True,
     )
-    st.session_state["_lucide_loaded"] = True
+st.session_state["_lucide_loaded"] = True
+
+from dashboard.pipeline_runner import acquire_lock, allow_pipeline_run, release_lock, run_pipeline
 
 SAFE_UPLOAD_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB per uploaded file to avoid disk exhaustion
