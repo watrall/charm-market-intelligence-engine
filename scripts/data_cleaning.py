@@ -120,11 +120,11 @@ def _load_patterns(config_path: Path | None = None) -> tuple[dict[str, re.Patter
         with path.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
     except FileNotFoundError:
-        warnings.warn(f"Job pattern config missing at {path}; classification skipped.")
+        warnings.warn(f"Job pattern config missing at {path}; classification skipped.", stacklevel=2)
         _JOB_PATTERNS, _SENIORITY_PATTERNS, _PATTERN_SOURCE = {}, [], path
         return _JOB_PATTERNS, _SENIORITY_PATTERNS
     except json.JSONDecodeError as exc:
-        warnings.warn(f"Invalid JSON in {path}: {exc}; classification skipped.")
+        warnings.warn(f"Invalid JSON in {path}: {exc}; classification skipped.", stacklevel=2)
         _JOB_PATTERNS, _SENIORITY_PATTERNS, _PATTERN_SOURCE = {}, [], path
         return _JOB_PATTERNS, _SENIORITY_PATTERNS
 
@@ -138,7 +138,7 @@ def _load_patterns(config_path: Path | None = None) -> tuple[dict[str, re.Patter
         for bucket, entries in data.get("seniority", {}).items()
     ]
     if errors:
-        warnings.warn("; ".join(errors))
+        warnings.warn("; ".join(errors), stacklevel=2)
     _JOB_PATTERNS, _SENIORITY_PATTERNS, _PATTERN_SOURCE = job_patterns, seniority_patterns, path
     return _JOB_PATTERNS, _SENIORITY_PATTERNS
 

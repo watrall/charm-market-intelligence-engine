@@ -12,7 +12,7 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Optional, List, Dict, Tuple
+from typing import Optional
 
 
 BASE = Path(__file__).resolve().parents[1]
@@ -85,7 +85,7 @@ def _pick_skills(skill_pool: list[str]) -> list[str]:
     return sorted(set(picks))
 
 
-def _salary_for(seniority: str) -> Tuple[Optional[float], Optional[float]]:
+def _salary_for(seniority: str) -> tuple[Optional[float], Optional[float]]:
     if seniority == "entry":
         low = random.randint(42000, 56000)
         high = low + random.randint(4000, 12000)
@@ -145,7 +145,7 @@ def generate(n_jobs: int = 240, seed: int = 42) -> None:
     skill_pool = _read_skill_aliases()
 
     start = date.today() - timedelta(days=120)
-    jobs: List[Dict[str, object]] = []
+    jobs: list[dict[str, object]] = []
 
     for i in range(n_jobs):
         place = random.choice(PLACES)
