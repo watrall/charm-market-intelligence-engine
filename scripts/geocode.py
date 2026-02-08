@@ -41,7 +41,7 @@ def _load_cache(path: Path) -> pd.DataFrame:
         # Validate coordinate bounds
         df = df[df["lat"].between(-90, 90) | df["lat"].isna()]
         df = df[df["lon"].between(-180, 180) | df["lon"].isna()]
-        return df
+        return cast(pd.DataFrame, df)
     except (pd.errors.EmptyDataError, OSError, ValueError):
         return pd.DataFrame(columns=["location", "lat", "lon"])
 
