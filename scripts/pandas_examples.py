@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import sqlite3
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -14,35 +15,38 @@ def load_jobs_from_csv() -> pd.DataFrame:
     p = PROC / "jobs.csv"
     if not p.exists():
         raise FileNotFoundError("Run the pipeline first to create data/processed/jobs.csv")
-    return pd.read_csv(p)
+    return cast(pd.DataFrame, pd.read_csv(p))
 
 def load_jobs_from_sqlite() -> pd.DataFrame:
     if not DB.exists():
         raise FileNotFoundError("SQLite DB not found. Run the pipeline once with USE_SQLITE=true.")
     with sqlite3.connect(str(DB)) as conn:
-        return pd.read_sql_query("""
+        return cast(pd.DataFrame, pd.read_sql_query("""
             SELECT j.*, GROUP_CONCAT(s.skill, ',') AS skills_norm
             FROM jobs j
             LEFT JOIN job_skills s ON s.job_id = j.id
             GROUP BY j.id
-        """, conn)
+        """, conn))
 
 def _explode_skills(df: pd.DataFrame, col: str = "skills") -> pd.DataFrame:
     s = df[col].fillna("")
     if "skills_norm" in df.columns and df["skills_norm"].notna().any():
         s = df["skills_norm"].fillna("")
-    return (df.assign(skill_list=s.str.split(","))
-              .explode("skill_list")
-              .assign(skill=lambda d: d["skill_list"].str.strip())
-              .drop(columns=["skill_list"])
-              .query("skill != ''"))
+    return cast(
+        pd.DataFrame,
+        (df.assign(skill_list=s.str.split(","))
+           .explode("skill_list")
+           .assign(skill=lambda d: d["skill_list"].str.strip())
+           .drop(columns=["skill_list"])
+           .query("skill != ''")),
+    )
 
 def top_skills(df: pd.DataFrame, n=25) -> pd.DataFrame:
     ex = _explode_skills(df)
     size_series = ex.groupby("skill").size()
     size_df = size_series.reset_index()
     size_df.columns = ["skill", "count"]
-    return size_df.sort_values("count", ascending=False).head(n)
+    return cast(pd.DataFrame, size_df.sort_values("count", ascending=False).head(n))
 
 def monthly_postings(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
@@ -51,7 +55,7 @@ def monthly_postings(df: pd.DataFrame) -> pd.DataFrame:
     size_series = d.groupby("month").size()
     size_df = size_series.reset_index()
     size_df.columns = ["month", "postings"]
-    return size_df.sort_values("month")
+    return cast(pd.DataFrame, size_df.sort_values("month"))
 
 _STATE_RE = re.compile(r"\b([A-Z]{2})\b\s*$")
 def jobs_by_state(df: pd.DataFrame) -> pd.DataFrame:
@@ -65,7 +69,7 @@ def jobs_by_state(df: pd.DataFrame) -> pd.DataFrame:
     size_series = d.query("state != ''").groupby("state").size()
     size_df = size_series.reset_index()
     size_df.columns = ["state", "postings"]
-    return size_df.sort_values("postings", ascending=False)
+    return cast(pd.DataFrame, size_df.sort_values("postings", ascending=False))
 
 def salary_by_skill(df: pd.DataFrame, min_n=3) -> pd.DataFrame:
     ex = _explode_skills(df)
@@ -75,7 +79,7 @@ def salary_by_skill(df: pd.DataFrame, min_n=3) -> pd.DataFrame:
                                  avg_low=("low","mean"),
                                  avg_high=("high","mean"))
              .reset_index())
-    return g.query("n >= @min_n").sort_values("n", ascending=False)
+    return cast(pd.DataFrame, g.query("n >= @min_n").sort_values("n", ascending=False))
 
 def export_all():
     PROC.mkdir(parents=True, exist_ok=True)

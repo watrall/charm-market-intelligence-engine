@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 from geopy.exc import GeocoderServiceError, GeocoderTimedOut
@@ -33,7 +34,7 @@ def _load_cache(path: Path) -> pd.DataFrame:
         if path.stat().st_size > 50_000_000:  # 50MB limit
             print("Warning: Geocache too large, resetting")
             return pd.DataFrame(columns=["location", "lat", "lon"])
-        df = pd.read_csv(path)
+        df = cast(pd.DataFrame, pd.read_csv(path))
         # Validate expected columns exist
         if not {"location", "lat", "lon"}.issubset(df.columns):
             return pd.DataFrame(columns=["location", "lat", "lon"])
@@ -86,4 +87,4 @@ def geocode_locations(df: pd.DataFrame, cache_path: Path | None = None) -> pd.Da
 
     df["lat"] = df["location_norm"].map(lambda loc: known.get(loc, (None, None))[0])
     df["lon"] = df["location_norm"].map(lambda loc: known.get(loc, (None, None))[1])
-    return df.drop(columns=["location_norm"])
+    return cast(pd.DataFrame, df.drop(columns=["location_norm"]))

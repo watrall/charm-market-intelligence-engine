@@ -7,6 +7,7 @@ import re
 import warnings
 from collections.abc import Sequence
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -240,4 +241,4 @@ def clean_and_dedupe(df: pd.DataFrame) -> pd.DataFrame:
         for col in ("city", "state", "job_type", "seniority", "url"):
             df[col] = []
 
-    return df.drop(columns=["dedupe_key"])
+    return cast(pd.DataFrame, df.drop(columns=["dedupe_key"]))
