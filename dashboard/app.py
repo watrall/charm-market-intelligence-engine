@@ -170,10 +170,7 @@ def _coerce_skills(value) -> list[str]:
 
 def configure_explore_page():
     """Set page config once when rendering the Explore surface."""
-    if st.session_state.get("_page_configured"):
-        return
-    st.set_page_config(page_title="CHARM Dashboard: Explore", layout="wide")
-    st.session_state["_page_configured"] = True
+    st.set_page_config(page_title="CHARM", layout="wide")
 
 
 @st.cache_data(show_spinner=False)

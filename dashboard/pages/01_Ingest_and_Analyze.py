@@ -5,7 +5,7 @@ from dashboard import app as explore_app
 from dashboard.header import render_header
 
 st.set_page_config(
-    page_title="CHARM: Ingest & Analyze",
+    page_title="CHARM",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
