@@ -54,7 +54,7 @@ def main():
 
     # Build context
     ctx = build_report_context(proc_dir)
-    print(f"KPIs        : {len(ctx.get('kpis', []))}")
+    print(f"Findings    : {len(ctx.get('key_findings', []))}")
     print(f"Exec bullets: {len(ctx.get('executive_summary', []))}")
     print(f"Top skills  : {len(ctx.get('top_skills', []))}")
     print(f"Emerging    : {len(ctx.get('emerging_skills', []))}")

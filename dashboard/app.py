@@ -255,7 +255,7 @@ def load_us_states_geojson():
     return None, None
 
 
-def kpi_cards(df: pd.DataFrame):
+def key_findings_cards(df: pd.DataFrame):
     c1, c2, c3 = st.columns(3)
     with c1:
         st.metric("Total jobs", f"{len(df):,}")
@@ -746,7 +746,7 @@ def _render_results_step(proc_dir: Path):
             st.write(str(analysis.get("run_timestamp", ""))[:19])
         st.divider()
 
-    kpi_cards(df)
+    key_findings_cards(df)
     st.divider()
     filtered, selected_skills, mode = sidebar_filters(df)
 

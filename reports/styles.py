@@ -190,9 +190,9 @@ def get_styles() -> StyleSheet1:
         textColor=DARK_GRAY,
     ))
 
-    # KPI value (large, bold, in table cells)
+    # Key finding value (large, bold, in table cells)
     ss.add(ParagraphStyle(
-        name="KPIValue",
+        name="FindingValue",
         fontName=FONT_FAMILY_BOLD,
         fontSize=18,
         leading=22,
@@ -201,9 +201,9 @@ def get_styles() -> StyleSheet1:
         spaceAfter=SP4,
     ))
 
-    # KPI label
+    # Key finding label
     ss.add(ParagraphStyle(
-        name="KPILabel",
+        name="FindingLabel",
         fontName=FONT_FAMILY,
         fontSize=9,
         leading=12,
@@ -314,8 +314,8 @@ def skill_table_style():
     ])
 
 
-def kpi_table_style():
-    """Return a tile-like TableStyle for the KPI grid (grayscale only)."""
+def finding_table_style():
+    """Return a tile-like TableStyle for the key findings grid (grayscale only)."""
     from reportlab.platypus import TableStyle
 
     return TableStyle([

@@ -106,35 +106,35 @@ def _coerce_skills(value) -> list[str]:
 # Context extraction helpers
 # ---------------------------------------------------------------------------
 
-def _compute_kpis(df: pd.DataFrame, analysis: dict) -> list[dict]:
-    """Build list of KPI dicts from data."""
-    kpis: list[dict] = []
+def _compute_key_findings(df: pd.DataFrame, analysis: dict) -> list[dict]:
+    """Build list of key-finding dicts from data."""
+    findings: list[dict] = []
 
     num_jobs = analysis.get("num_jobs", len(df))
-    kpis.append({"label": "Total postings analyzed", "value": f"{num_jobs:,}"})
+    findings.append({"label": "Total postings analyzed", "value": f"{num_jobs:,}"})
 
     ue = analysis.get("unique_employers", 0)
     if not ue and "company" in df.columns:
         ue = df["company"].nunique()
-    kpis.append({"label": "Unique employers", "value": f"{ue:,}"})
+    findings.append({"label": "Unique employers", "value": f"{ue:,}"})
 
     # Date range
     if "date_posted" in df.columns and not df.empty and df["date_posted"].notna().any():
         dmin = df["date_posted"].min()
         dmax = df["date_posted"].max()
-        kpis.append({"label": "Date range", "value": f"{dmin} to {dmax}"})
+        findings.append({"label": "Date range", "value": f"{dmin} to {dmax}"})
 
     # Geocoded
     geocoded = analysis.get("geocoded", 0)
     if geocoded and num_jobs:
         pct = round(geocoded / num_jobs * 100)
-        kpis.append({"label": "Geocoded", "value": f"{geocoded:,} ({pct}%)"})
+        findings.append({"label": "Geocoded", "value": f"{geocoded:,} ({pct}%)"})
 
     # Top region
     if "state" in df.columns and not df.empty:
         top_state = df["state"].value_counts().head(1)
         if not top_state.empty:
-            kpis.append({
+            findings.append({
                 "label": "Top region",
                 "value": f"{top_state.index[0]} ({top_state.values[0]:,} postings)",
             })
@@ -142,7 +142,7 @@ def _compute_kpis(df: pd.DataFrame, analysis: dict) -> list[dict]:
     # Top skill
     top_skills = analysis.get("top_skills", [])
     if top_skills:
-        kpis.append({
+        findings.append({
             "label": "Top skill",
             "value": f"{top_skills[0][0]} ({top_skills[0][1]:,})",
         })
@@ -150,17 +150,17 @@ def _compute_kpis(df: pd.DataFrame, analysis: dict) -> list[dict]:
     # Unique locations
     if {"city", "state"}.issubset(df.columns) and not df.empty:
         uniq_locs = df[["city", "state"]].dropna().drop_duplicates().shape[0]
-        kpis.append({"label": "Unique locations", "value": f"{uniq_locs:,}"})
+        findings.append({"label": "Unique locations", "value": f"{uniq_locs:,}"})
 
     # Top employer
     top_employers = analysis.get("top_employers", [])
     if top_employers:
-        kpis.append({
+        findings.append({
             "label": "Top employer",
             "value": f"{top_employers[0][0]} ({top_employers[0][1]:,})",
         })
 
-    return kpis[:9]  # cap at 9
+    return findings[:9]  # cap at 9
 
 
 def _extract_executive_summary(analysis: dict, insights_text: str, df: pd.DataFrame) -> list[str]:
@@ -207,7 +207,7 @@ def _extract_executive_summary(analysis: dict, insights_text: str, df: pd.DataFr
     if ue and top_employers:
         top3 = [e[0] for e in top_employers[:3]]
         bullets.append(
-            f"The employer landscape includes {ue:,} organizations, with "
+            f"The employer mix includes {ue:,} organizations, with "
             f"{', '.join(top3)} among the most active."
         )
     else:
@@ -243,7 +243,7 @@ def _extract_implications(insights_text: str, analysis: dict) -> list[dict]:
         implications.append({
             "title": "Strengthen compliance training",
             "explanation": (
-                f"{s1} and {s2} dominate the skills landscape. "
+                f"{s1} and {s2} dominate the skills distribution. "
                 f"Programs that build practical competency in these areas "
                 f"will align directly with employer demand."
             ),
@@ -406,7 +406,7 @@ def build_report_context(proc_dir: Path | str, filters: dict | None = None) -> d
         "date_range": date_range,
         "run_date": run_ts or datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
         "fingerprint": compute_report_fingerprint(proc_dir, filters),
-        "kpis": _compute_kpis(df, analysis),
+        "key_findings": _compute_key_findings(df, analysis),
         "executive_summary": _extract_executive_summary(analysis, insights_text, df),
         "top_skills": top_12,
         "emerging_skills": emerging,

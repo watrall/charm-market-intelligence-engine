@@ -9,7 +9,7 @@ CHARM = Cultural Heritage & Archaeological Resource Management
 
 The point of CHARM is to guide the investment of resources and the development of undergraduate, graduate, and non-degree/professioal programs and curricula, including courses, micro-degrees, and professional certificates. While it was built with cultural heritage and archaeology in mind, the pipeline is intentionally modular and can be adapted to other disciplines with minimal changes.
 
-**Outcomes:** scrape job postings (American Anthropological Association & American Cultural Resources Association) → clean/dedupe → parse uploaded PDFs (industry reports) → spaCy Natural Language Processing (entity + skill extraction) → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly).
+**Outcomes:** scrape job postings (American Anthropological Association & American Cultural Resources Association) → clean/dedupe → parse uploaded PDFs (industry reports) → spaCy Natural Language Processing (entity + skill extraction) → sentiment → geocode → analysis → insights → SQLite/CSVs → optional Google Sheets → Streamlit dashboard (Folium + Plotly) → downloadable PDF report.
 
 ## Demo Mode
 
@@ -99,6 +99,7 @@ After running the pipeline, check that these files were created:
 | `data/processed/analysis.json` | Summary statistics | Contains `num_jobs`, `top_skills`, `schema_version` |
 | `data/processed/insights.md` | Human-readable market brief | Contains "## In-demand Skills" section |
 | `data/charm.db` | SQLite database | File exists (if `USE_SQLITE=true`) |
+| `data/reports/CHARM_Report_*.pdf` | PDF report | File exists, starts with `%PDF`, > 10 KB |
 
 **Quick validation command:**
 ```bash
@@ -111,8 +112,9 @@ cat data/processed/analysis.json | head -20
 **Dashboard validation:**
 1. Run `make run-dashboard`
 2. Open http://localhost:8501 in your browser
-3. You should see KPI cards, a map, and skill charts
-4. If "No data yet" appears, the pipeline hasn't run successfully
+3. You should see key findings cards, a map, and skill charts
+4. A "Download report" button in the header generates a PDF on demand
+5. If "No data yet" appears, the pipeline hasn't run successfully
 
 ---
 
@@ -140,6 +142,10 @@ charm-market-intelligence-engine/
 │   ├── geocache.csv          # Location → lat/lon cache
 │   └── charm.db              # SQLite database
 ├── reports/                   # Drop PDFs here for parsing
+├── reports/ (Python)          # PDF report generation package
+│   ├── context.py            # Build report context from pipeline artifacts
+│   ├── pdf_report.py         # Assemble PDF with ReportLab
+│   └── styles.py             # Page layout, fonts, table styles
 ├── skills/                    # Taxonomy definitions
 │   └── skills_taxonomy.csv   # Skill aliases → normalized names
 └── secrets/                   # Credentials (gitignored)
@@ -272,11 +278,38 @@ If the file is missing, the workflow falls back to a concise built-in prompt.
 ## Dashboard design choices
 Dashboard design notes:
 - **Single column rhythm** with clear section spacing; primary actions (filters, downloads) are easy to find.
-- **Subtle cards** for KPIs; no heavy boxes or loud colors.
+- **Subtle cards** for key findings; no heavy boxes or loud colors.
 - **Plotly (plotly_white)** with reduced chart chrome; labels kept concise.
 - **Folium map** with heatmap + clustered markers for fast spatial scanning.
 - Hidden default Streamlit menu/footer to keep focus on data.
 - Sidebar filters drive all sections, so the page stays uncluttered.
+- **PDF export** via a header download button; the report is generated with ReportLab and cached by a content fingerprint so repeated clicks are instant.
+
+## PDF report export
+
+The dashboard includes a "Download report" button that generates a multi-section PDF from the latest pipeline run. The report is built with ReportLab and uses the Inter font family (falls back to Helvetica if the TTFs are missing).
+
+**Sections included:**
+1. Cover page (title, date range, fingerprint)
+2. Executive Summary (5 data-driven bullets)
+3. Key Findings (up to 9 metrics in a 3-column grid)
+4. Trends & Signals (top 12 skills + emerging skills tables)
+5. Implications & Opportunities (actionable cards with "Why it matters")
+6. Methods & Governance (data sources, approach, limitations)
+7. Appendix (definitions and employer sources)
+
+**How it works:**
+- `reports/context.py` reads `jobs.csv`, `analysis.json`, and `insights.md` from the processed directory and builds a normalized context dict.
+- `reports/pdf_report.py` turns that context into ReportLab flowables and assembles the PDF.
+- `reports/styles.py` defines the page layout, paragraph styles, and table styles.
+- `dashboard/header.py` wires the download button into the Streamlit header; the PDF bytes are cached by a SHA-256 fingerprint of the source files, so the report is only regenerated when data changes.
+
+**Generating a report from the command line:**
+```bash
+python scripts/generate_report.py --proc-dir data/processed --out-dir data/reports
+```
+
+This writes a `CHARM_Report_<fingerprint>.pdf` to the output directory and runs basic validity checks (PDF header present, file size > 10 KB).
 
 
 ## LLM options (opt-in)
@@ -289,7 +322,7 @@ Choose a provider in `.env`:
 If no key is present or the call fails, the pipeline still produces **rules-based insights**.
 
 
-### Google Sheets — reports worksheet
+### Google Sheets - reports worksheet
 The pipeline can also append a **reports** tab with parsed report metadata:
 - Worksheet name (default): `reports` (configure via `GOOGLE_SHEET_WORKSHEET_REPORTS`)
 - Columns: report_name, word_count, skills (comma-separated)
@@ -310,11 +343,11 @@ make clean        # clear caches
 
 On macOS/Linux it works out of the box. On Windows, use **Git Bash** or **WSL**.
 
-## How the workflow runs (step‑by‑step)
+## How the workflow runs (step-by-step)
 1. **Scrape job boards** (AAA + ACRA) with pagination → `scripts/scrape_jobs.py`
    - Collects: `source, title, company, location, date_posted, job_url, description`
-   - Walks “Next” pages safely (limit=10) and de‑dupes by `job_url`.
-2. **Clean & de‑duplicate** → `scripts/data_cleaning.py`
+   - Walks “Next” pages safely (limit=10) and de-dupes by `job_url`.
+2. **Clean & de-duplicate** → `scripts/data_cleaning.py`
    - Normalizes text, hashes `(title|company|desc-snippet)` to drop dupes.
    - Extracts **salary** hints (`salary_min`, `salary_max`, `currency`) when present.
 3. **Parse industry reports (PDFs)** → `scripts/parse_reports.py`
@@ -322,14 +355,14 @@ On macOS/Linux it works out of the box. On Windows, use **Git Bash** or **WSL**.
 4. **NLP enrichment (jobs + reports)** → `scripts/nlp_entities.py`
    - spaCy NER (ORG/GPE/LOC) and **skills taxonomy** matching (`skills/skills_taxonomy.csv`).
 5. **Sentiment** (optional) → `scripts/sentiment_salience.py`
-6. **Geocode locations** with Nominatim + on‑disk cache → `scripts/geocode.py`
+6. **Geocode locations** with Nominatim + on-disk cache → `scripts/geocode.py`
 7. **Persist** results
    - CSVs to `data/processed/` (for the dashboard)
    - **SQLite** to `data/charm.db` (for durable querying and auditing)
 8. **Share** (optional): append **jobs** + **reports** to Google Sheets
 9. **Analyze** → `scripts/analyze.py` (top skills, counts; optional clustering)
 10. **Generate insights** → `scripts/insights.py`
-    - Rules‑based recommendations (always)
+    - Rules-based recommendations (always)
     - **LLM brief** using the external prompt (`config/insight_prompt.md`)
 11. **Visualize** → `dashboard/app.py` (Streamlit + Plotly + Folium)
 
@@ -345,7 +378,7 @@ On macOS/Linux it works out of the box. On Windows, use **Git Bash** or **WSL**.
 ## Program mapping & outcomes
 The insights module translates demand signals into **program formats**:
 - Undergraduate (online), Graduate (online)
-- Certificate, Post‑baccalaureate
+- Certificate, Post-baccalaureate
 - Workshop, Microlearning
 
 How it works:
@@ -439,59 +472,66 @@ Supporting both cloud and local LLMs is practical:
 
 - **Cost control**: Cloud models are metered. Ollama lets you run unlimited local inferences at no extra cost.
 - **Data governance**: Some orgs want text to stay on-prem. A local model keeps everything in your infrastructure.
-- **Portability**: Anyone can clone this repo and get working insights with Ollama—no API key required.
+- **Portability**: Anyone can clone this repo and get working insights with Ollama -- no API key required.
 - **Failover**: If your cloud quota runs out or there's an outage, the local model keeps the pipeline functional.
 
 ## Components & responsibilities (what each piece does)
 
-This repository is organized so a reviewer can read it top‑down and understand exactly how the system works. Every piece below has a clear, single responsibility.
+This repository is organized so a reviewer can read it top-down and understand exactly how the system works. Every piece below has a clear, single responsibility.
 
 ### Orchestration (n8n)
-- `n8n/charm_workflow.json` — Minimal scheduler/trigger that runs the Python pipeline via **Execute Command** from a Cron or Webhook.
-- `n8n/charm_workflow_mattermost.json` — Same as above, with post‑run **Mattermost notifications**. Reads `analysis.json` and `insights.md`, composes a short message (totals, top skills, optional alerts, brief), posts to your incoming webhook, and snapshots the current analysis for next‑run comparisons.
+- `n8n/charm_workflow.json` - Minimal scheduler/trigger that runs the Python pipeline via **Execute Command** from a Cron or Webhook.
+- `n8n/charm_workflow_mattermost.json` - Same as above, with post-run **Mattermost notifications**. Reads `analysis.json` and `insights.md`, composes a short message (totals, top skills, optional alerts, brief), posts to your incoming webhook, and snapshots the current analysis for next-run comparisons.
 
 ### Configuration
-- `config/.env.example` — Environment variables with explicit placeholders (e.g., `ENTER_GOOGLE_SHEET_ID_HERE`). Copy to `.env` and fill in. Includes LLM provider switches, user agent, and dashboard URL.
-- `config/insight_prompt.md` — The human‑editable prompt template used when `USE_LLM=true`. It’s rendered with live variables (date, counts, top skills) before calling the model.
+- `config/.env.example` - Environment variables with explicit placeholders (e.g., `ENTER_GOOGLE_SHEET_ID_HERE`). Copy to `.env` and fill in. Includes LLM provider switches, user agent, and dashboard URL.
+- `config/insight_prompt.md` - The human-editable prompt template used when `USE_LLM=true`. It’s rendered with live variables (date, counts, top skills) before calling the model.
 
 ### Data definitions / taxonomy
-- `skills/skills_taxonomy.csv` — Deterministic mapping of common terms/aliases to normalized skill names and (optionally) categories. This keeps “GIS” vs “ArcGIS” vs “ArcGIS Pro” consistent in analysis.
+- `skills/skills_taxonomy.csv` - Deterministic mapping of common terms/aliases to normalized skill names and (optionally) categories. This keeps “GIS” vs “ArcGIS” vs “ArcGIS Pro” consistent in analysis.
 
 ### Pipeline (Python)
-- `scripts/pipeline.py` — The orchestrator. Runs end‑to‑end: scrape → clean/dedupe → parse reports → NLP/skills → sentiment → geocode → analyze → insights → persist (CSV/SQLite) → optional Google Sheets append.
-- `scripts/scrape_jobs.py` — Scrapers for ACRA + AAA with **pagination** and per‑item description fetching. Uses a configurable `USER_AGENT` and polite defaults.
-- `scripts/data_cleaning.py` — Normalization and duplicate detection (content hashing across title/company/description snippet). Also extracts salary hints when present.
-- `scripts/parse_reports.py` — Reads **PDFs** from `/reports/` with PyMuPDF; emits one record per report with the raw text for downstream NLP.
-- `scripts/nlp_entities.py` — spaCy NER for organizations and locations + taxonomy‑based **skill extraction**. Produces a comma‑separated `skills` column.
-- `scripts/sentiment_salience.py` — Optional lightweight sentiment using VADER (useful for qualitative clustering or future labeling).
-- `scripts/geocode.py` — Geocodes the `location` field using Nominatim with on‑disk caching; attaches `lat` and `lon` for mapping.
-- `scripts/analyze.py` — **Pandas‑based** summaries (top skills, counts, employers, geocoded totals). Can be extended to clustering or time‑series.
-- `scripts/insights.py` — Generates a short, human‑readable brief. Always emits rule‑based recommendations; when `USE_LLM=true`, renders `config/insight_prompt.md` and calls the selected provider (OpenAI or Ollama).
-- `scripts/gsheets_sync.py` — Appends **jobs** and **reports** to Google Sheets. Handles worksheet creation and de‑dupe by URL or name.
-- `scripts/gsheets_test.py` — One‑liner connectivity check for Sheets credentials and permissions.
-- `scripts/preview_prompt.py` — Renders the final LLM prompt (with current data) so you can review or paste it elsewhere.
-- `scripts/pandas_examples.py` — Extra recipes for ad‑hoc analysis; helpful for quick CSV exports during exploration.
+- `scripts/pipeline.py` - The orchestrator. Runs end-to-end: scrape → clean/dedupe → parse reports → NLP/skills → sentiment → geocode → analyze → insights → persist (CSV/SQLite) → optional Google Sheets append.
+- `scripts/scrape_jobs.py` - Scrapers for ACRA + AAA with **pagination** and per-item description fetching. Uses a configurable `USER_AGENT` and polite defaults.
+- `scripts/data_cleaning.py` - Normalization and duplicate detection (content hashing across title/company/description snippet). Also extracts salary hints when present.
+- `scripts/parse_reports.py` - Reads **PDFs** from `/reports/` with PyMuPDF; emits one record per report with the raw text for downstream NLP.
+- `scripts/nlp_entities.py` - spaCy NER for organizations and locations + taxonomy-based **skill extraction**. Produces a comma-separated `skills` column.
+- `scripts/sentiment_salience.py` - Optional lightweight sentiment using VADER (useful for qualitative clustering or future labeling).
+- `scripts/geocode.py` - Geocodes the `location` field using Nominatim with on-disk caching; attaches `lat` and `lon` for mapping.
+- `scripts/analyze.py` - **Pandas-based** summaries (top skills, counts, employers, geocoded totals). Can be extended to clustering or time-series.
+- `scripts/insights.py` - Generates a short, human-readable brief. Always emits rule-based recommendations; when `USE_LLM=true`, renders `config/insight_prompt.md` and calls the selected provider (OpenAI or Ollama).
+- `scripts/gsheets_sync.py` - Appends **jobs** and **reports** to Google Sheets. Handles worksheet creation and de-dupe by URL or name.
+- `scripts/gsheets_test.py` - One-liner connectivity check for Sheets credentials and permissions.
+- `scripts/preview_prompt.py` - Renders the final LLM prompt (with current data) so you can review or paste it elsewhere.
+- `scripts/pandas_examples.py` - Extra recipes for ad-hoc analysis; helpful for quick CSV exports during exploration.
 
 ### Storage / outputs
-- `data/charm.db` — SQLite database created on first run (durable auditing and ad-hoc queries).
-- `data/processed/` — CSV and artifacts used by the dashboard: `jobs.csv`, `reports.csv`, `analysis.json`, `insights.md`, and `wordcloud.png`.
-- `docs/sql_examples.sql` — A few ready-to-use SQL queries against `charm.db` (e.g., salary by skill, recent Section 106/NEPA postings).
-- `docs/data_contract.md` — Field-level documentation for each exported file so downstream teams know how to consume them.
+- `data/charm.db` - SQLite database created on first run (durable auditing and ad-hoc queries).
+- `data/processed/` - CSV and artifacts used by the dashboard: `jobs.csv`, `reports.csv`, `analysis.json`, `insights.md`, and `wordcloud.png`.
+- `docs/sql_examples.sql` - A few ready-to-use SQL queries against `charm.db` (e.g., salary by skill, recent Section 106/NEPA postings).
+- `docs/data_contract.md` - Field-level documentation for each exported file so downstream teams know how to consume them.
 
 ### Dashboard (Streamlit + Folium + Plotly)
-- `dashboard/app.py` — Single‑page, minimalist UI:
-  - KPI cards (postings, employers, geocoded)
+- `dashboard/app.py` - Single-page, minimalist UI:
+  - Key findings cards (postings, employers, geocoded)
   - Top skills bar chart (Plotly)
   - Job map with heatmap + clustered markers (Folium)
   - Insights panel and word cloud
   - Sidebar filters and simple download actions (filtered CSV, analysis JSON)
-- `.streamlit/config.toml` — Neutral, brand‑agnostic theme.
+- `dashboard/header.py` - Header strip with the PDF download button; caches generated bytes by content fingerprint.
+- `.streamlit/config.toml` - Neutral, brand-agnostic theme.
+
+### Report generation (ReportLab)
+- `reports/context.py` - Builds and normalizes a report context dict from pipeline artifacts (`jobs.csv`, `analysis.json`, `insights.md`). Computes a SHA-256 fingerprint for cache invalidation.
+- `reports/pdf_report.py` - Assembles the multi-section PDF from the context dict using ReportLab flowables.
+- `reports/styles.py` - Page layout, paragraph styles, table styles, and font registration (Inter with Helvetica fallback).
+- `scripts/generate_report.py` - CLI script to generate and validate a PDF report without the dashboard.
 
 ### Tooling
-- `Makefile` — Short commands for setup, running the pipeline, launching the dashboard, testing Sheets, previewing the prompt, and cleanup.
-- `requirements.txt` — Python dependencies (scraping, NLP, analysis, dashboard, LLM providers).
-- `LICENSE` — MIT license.
-- `CHANGELOG.md` — A concise record of what’s included in this release and why certain decisions were made.
+- `Makefile` - Short commands for setup, running the pipeline, launching the dashboard, testing Sheets, previewing the prompt, and cleanup.
+- `requirements.txt` - Python dependencies (scraping, NLP, analysis, dashboard, LLM providers).
+- `LICENSE` - MIT license.
+- `CHANGELOG.md` - A concise record of what’s included in this release and why certain decisions were made.
 
 ---
 
@@ -509,7 +549,7 @@ Everything is idempotent: duplicates are filtered, pagination is capped, geocodi
 - **LLM calls (optional):** Each pipeline run with `gpt-4o-mini` costs well under $1 (usually a few cents). The default prompt and response fit comfortably within 1200 tokens. Set `USE_LLM=false` for completely free runs. If you're running this on a schedule, estimate your monthly call volume and budget accordingly.
 - **Google Sheets sync (optional):** Setting `USE_SHEETS=true` turns on both Sheets and Drive APIs. They are metered after the free tier, and every run makes a few dozen append/read calls. Leave it `false` until you create a GCP project, confirm quotas, and budget for increased throughput (e.g., batch jobs nightly instead of per-scrape).
 - **Geocoding:** The built-in Nominatim client is free but rate-limited to 1 request/sec; heavy usage may require hosting your own instance. Because geocoding is cached in `data/geocache.csv`, reruns stay cost-free unless you clear the cache.
-- **Storage/dashboards:** Streamlit + SQLite incur no extra spend—everything runs locally. When deploying to cloud infrastructure, include VM/storage costs in your overall estimate.
+- **Storage/dashboards:** Streamlit + SQLite incur no extra spend -- everything runs locally. When deploying to cloud infrastructure, include VM/storage costs in your overall estimate.
 - **Sheets cache resets:** The Google Sheets sync stores cached job/report IDs under `data/cache/`. If someone edits or deletes rows directly in the Sheet, clear those files before the next run so the pipeline can rebuild its local view of existing rows.
 
 Document these toggles in your runbook so reviewers understand how to perform a zero-cost demo vs. a production run with LLM + Sheets enabled.

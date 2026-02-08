@@ -21,7 +21,7 @@ This document describes the structure of the primary artifacts produced by `scri
 | `currency` | string | Salary currency code. |
 | `url` | string | Canonical job URL. |
 | `description` | string | Cleaned HTML/plain text snippet. |
-| `sentiment` | float | VADER sentiment score (−1..1). |
+| `sentiment` | float | VADER sentiment score (-1..1). |
 
 ## `data/processed/reports.csv`
 | Column | Type | Notes |
@@ -36,7 +36,7 @@ This document describes the structure of the primary artifacts produced by `scri
 Top-level keys:
 - `num_jobs` (int)
 - `unique_employers` (int)
-- `geocoded` (int) – number of postings with coordinates
+- `geocoded` (int) - number of postings with coordinates
 - `top_skills` (list of `[skill, count]`)
 - `top_employers` (list of `[org, count]`)
 - `run_timestamp` (ISO8601 string)

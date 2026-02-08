@@ -41,7 +41,7 @@ from reports.styles import (
     SP32,
     VERY_LIGHT_GRAY,
     get_styles,
-    kpi_table_style,
+    finding_table_style,
     skill_table_style,
 )
 
@@ -194,25 +194,25 @@ def _executive_summary(ctx: dict, ss) -> list:
 
 
 def _key_findings(ctx: dict, ss) -> list:
-    """Section 3: Key Findings. KPI tiles as a table."""
+    """Section 3: Key Findings as a table."""
     elements: list = []
     elements.append(Paragraph("Key Findings", ss["H2"]))
     elements.append(Spacer(1, SP12))
 
-    kpis = ctx.get("kpis", [])
-    if not kpis:
-        elements.append(Paragraph("No KPI data available in this run.", ss["Body"]))
+    findings = ctx.get("key_findings", [])
+    if not findings:
+        elements.append(Paragraph("No findings data available in this run.", ss["Body"]))
         elements.append(PageBreak())
         return elements
 
-    # Build 3-column grid of KPI tiles
+    # Build 3-column grid of finding tiles
     cols = 3
     rows_data: list[list] = []
     row: list = []
-    for kpi in kpis:
+    for finding in findings:
         cell_content = [
-            Paragraph(str(kpi["value"]), ss["KPIValue"]),
-            Paragraph(str(kpi["label"]), ss["KPILabel"]),
+            Paragraph(str(finding["value"]), ss["FindingValue"]),
+            Paragraph(str(finding["label"]), ss["FindingLabel"]),
         ]
         row.append(cell_content)
         if len(row) == cols:
@@ -220,12 +220,12 @@ def _key_findings(ctx: dict, ss) -> list:
             row = []
     if row:
         while len(row) < cols:
-            row.append([Paragraph("", ss["KPILabel"])])
+            row.append([Paragraph("", ss["FindingLabel"])])
         rows_data.append(row)
 
     col_width = CONTENT_WIDTH / cols
     tbl = Table(rows_data, colWidths=[col_width] * cols)
-    tbl.setStyle(kpi_table_style())
+    tbl.setStyle(finding_table_style())
     elements.append(tbl)
 
     elements.append(PageBreak())
