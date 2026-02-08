@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import ipaddress
 import os
+import socket
 from collections.abc import Iterable, Sequence
 from datetime import date
 from pathlib import Path
@@ -10,6 +12,63 @@ import pandas as pd
 import requests
 
 TopSkill = tuple[str, int]
+
+
+def _truthy(value: str | None) -> bool:
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _is_blocked_ip(address: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    )
+
+
+def _is_private_or_local_host(hostname: str) -> bool:
+    host = (hostname or "").strip().lower().rstrip(".")
+    if not host:
+        return True
+    if host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
+    if host in {"localhost"} or host.endswith(".local"):
+        return True
+    if _is_blocked_ip(host):
+        return True
+    try:
+        resolved = socket.getaddrinfo(host, None)
+    except OSError:
+        return False
+    for item in resolved:
+        if len(item) < 5 or not item[4]:
+            continue
+        if _is_blocked_ip(str(item[4][0])):
+            return True
+    return False
+
+
+def _validate_http_endpoint(url: str, label: str) -> str | None:
+    parsed = urlparse(url or "")
+    if parsed.scheme not in {"http", "https"}:
+        return f"(Invalid {label} scheme; only http/https allowed.)"
+    if not parsed.netloc:
+        return f"(Invalid {label}; host missing.)"
+    if not _truthy(os.getenv("ALLOW_PRIVATE_LLM_HOSTS")) and _is_private_or_local_host(parsed.hostname or ""):
+        return (
+            f"(Invalid {label}; private/local hosts are blocked. "
+            "Set ALLOW_PRIVATE_LLM_HOSTS=true to override.)"
+        )
+    return None
 
 
 def _normalize_top_skills(values: Iterable[Sequence]) -> list[TopSkill]:
@@ -61,11 +120,10 @@ def _llm_call(prompt: str) -> str:
             base_url = ""
             if provider == "openai_compat":
                 base_url = os.getenv("LLM_BASE_URL", "").strip()
-                parsed = urlparse(base_url or "")
-                if parsed.scheme and parsed.scheme not in {"http", "https"}:
-                    return "(Invalid LLM_BASE_URL scheme; only http/https allowed.)"
-                if base_url and not parsed.netloc:
-                    return "(Invalid LLM_BASE_URL; host missing.)"
+                if base_url:
+                    validation_error = _validate_http_endpoint(base_url, "LLM_BASE_URL")
+                    if validation_error:
+                        return validation_error
             client = OpenAI(base_url=base_url) if base_url else OpenAI()
             client_response = client.chat.completions.create(
                 model=model,
@@ -114,11 +172,9 @@ def _llm_call(prompt: str) -> str:
             if not url:
                 url = f"https://api-inference.huggingface.co/models/{hf_model}"
             else:
-                parsed = urlparse(url)
-                if parsed.scheme not in {"http", "https"}:
-                    return "(Invalid HF_INFERENCE_URL scheme; only http/https allowed.)"
-                if not parsed.netloc:
-                    return "(Invalid HF_INFERENCE_URL; host missing.)"
+                validation_error = _validate_http_endpoint(url, "HF_INFERENCE_URL")
+                if validation_error:
+                    return validation_error
 
             headers = {"Authorization": f"Bearer {token}"}
             body = {

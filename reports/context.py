@@ -69,7 +69,8 @@ def _load_json(path: Path) -> dict:
     if not path.exists():
         return {}
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+        return loaded if isinstance(loaded, dict) else {}
     except Exception:
         return {}
 
@@ -100,6 +101,32 @@ def _coerce_skills(value) -> list[str]:
                 pass
         return [t.strip(" []'\"") for t in re.split(r"[;|,]", raw) if t.strip(" []'\"")]
     return []
+
+
+def _normalize_top_skills(raw_value: Any) -> list[tuple[str, int]]:
+    """Normalize top_skills into [(skill, count)] while skipping malformed entries."""
+    if not isinstance(raw_value, list):
+        return []
+
+    normalized: list[tuple[str, int]] = []
+    for item in raw_value:
+        skill: Any = None
+        count: Any = None
+
+        if isinstance(item, dict):
+            skill = item.get("skill") or item.get("name")
+            count = item.get("count")
+        elif isinstance(item, (list, tuple)) and len(item) >= 2:
+            skill = item[0]
+            count = item[1]
+
+        if skill is None:
+            continue
+        try:
+            normalized.append((str(skill), int(count)))
+        except (TypeError, ValueError):
+            continue
+    return normalized
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +167,7 @@ def _compute_key_findings(df: pd.DataFrame, analysis: dict) -> list[dict]:
             })
 
     # Top skill
-    top_skills = analysis.get("top_skills", [])
+    top_skills = _normalize_top_skills(analysis.get("top_skills", []))
     if top_skills:
         findings.append({
             "label": "Top skill",
@@ -168,7 +195,7 @@ def _extract_executive_summary(analysis: dict, insights_text: str, df: pd.DataFr
     bullets: list[str] = []
     num_jobs = analysis.get("num_jobs", len(df))
     ue = analysis.get("unique_employers", 0)
-    top_skills = analysis.get("top_skills", [])
+    top_skills = _normalize_top_skills(analysis.get("top_skills", []))
 
     # Bullet 1: overview
     if num_jobs:
@@ -234,7 +261,7 @@ def _extract_executive_summary(analysis: dict, insights_text: str, df: pd.DataFr
 def _extract_implications(insights_text: str, analysis: dict) -> list[dict]:
     """Derive 3-6 actionable implications for leadership."""
     implications: list[dict] = []
-    top_skills = analysis.get("top_skills", [])
+    top_skills = _normalize_top_skills(analysis.get("top_skills", []))
 
     # Derive from available data
     if len(top_skills) >= 2:
@@ -393,8 +420,7 @@ def build_report_context(proc_dir: Path | str, filters: dict | None = None) -> d
             pass
 
     # Top skills
-    top_skills_raw: list[list] = analysis.get("top_skills", [])
-    top_skills = [(str(s[0]), int(s[1])) for s in top_skills_raw if len(s) >= 2]
+    top_skills = _normalize_top_skills(analysis.get("top_skills", []))
 
     # Emerging: next tier after top 12
     top_12 = top_skills[:12]

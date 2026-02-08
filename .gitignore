@@ -49,3 +49,11 @@ docs/QUALITY_AUDIT.md
 docs/SECURITY_REPORT.md
 docs/SECURITY_CHANGES.md
 docs/SECURITY_VERIFICATION.md
+
+# Security audit artifacts (private working docs)
+SECURITY_REPORT.md
+SECURITY_VERIFICATION.md
+SECURITY_CHANGES.md
+SECURITY_GUIDE.md
+docs/security.md
+README_CHANGE_PROPOSAL.md

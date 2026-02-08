@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -14,11 +15,27 @@ TEXT_DIR = CACHE_DIR / "reports_text"
 TEXT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def extract_text_pdf(path: Path) -> str:
+def _env_positive_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or not str(raw).strip():
+        return default
+    try:
+        parsed = int(raw)
+    except (TypeError, ValueError):
+        print(f"Warning: invalid {name}={raw!r}; using {default}")
+        return default
+    if parsed <= 0:
+        print(f"Warning: non-positive {name}={raw!r}; using {default}")
+        return default
+    return parsed
+
+
+def extract_text_pdf(path: Path, max_pages: int = 300) -> str:
     import fitz
 
     with fitz.open(path) as doc:
-        return "\n".join(page.get_text() for page in doc)
+        page_limit = min(len(doc), max_pages)
+        return "\n".join(doc[idx].get_text() for idx in range(page_limit))
 
 
 def _load_cache():
@@ -78,6 +95,8 @@ def _load_text_file(filename: str | None) -> str | None:
 def parse_all_reports(report_dir: Path) -> pd.DataFrame:
     report_dir.mkdir(exist_ok=True, parents=True)
     report_dir_resolved = report_dir.resolve()
+    max_pdf_bytes = _env_positive_int("REPORT_PDF_MAX_BYTES", 25 * 1024 * 1024)
+    max_pdf_pages = _env_positive_int("REPORT_PDF_MAX_PAGES", 300)
     cache = _load_cache()
     dirty = False
     rows = []
@@ -94,6 +113,13 @@ def parse_all_reports(report_dir: Path) -> pd.DataFrame:
         if not str(resolved).startswith(str(report_dir_resolved)):
             print(f"Skipping file outside report directory: {p.name}")
             continue
+        try:
+            size_bytes = p.stat().st_size
+        except OSError:
+            continue
+        if size_bytes > max_pdf_bytes:
+            print(f"Skipping oversized PDF: {p.name}")
+            continue
         seen_files.add(str(resolved))
         key = str(resolved)
         meta = cache.get(key, {})
@@ -101,7 +127,7 @@ def parse_all_reports(report_dir: Path) -> pd.DataFrame:
         txt = _load_text_file(meta.get("text_file")) if meta.get("checksum") == checksum else None
         if txt is None:
             try:
-                txt = extract_text_pdf(p)
+                txt = extract_text_pdf(p, max_pages=max_pdf_pages)
                 text_file = _write_text_file(p.name, txt, checksum)
                 cache[key] = {"checksum": checksum, "text_file": text_file}
                 dirty = True

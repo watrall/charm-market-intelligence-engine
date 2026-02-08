@@ -9,6 +9,21 @@ from geopy.extra.rate_limiter import RateLimiter
 from geopy.geocoders import Nominatim
 
 
+def _env_non_negative_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or not str(raw).strip():
+        return default
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        print(f"Warning: invalid {name}={raw!r}; using {default}")
+        return default
+    if value < 0:
+        print(f"Warning: negative {name}={raw!r}; using {default}")
+        return default
+    return value
+
+
 def _load_cache(path: Path) -> pd.DataFrame:
     """Load geocache with validation."""
     if not path.exists():
@@ -48,7 +63,7 @@ def geocode_locations(df: pd.DataFrame, cache_path: Path | None = None) -> pd.Da
     known = {row["location"]: (row["lat"], row["lon"]) for _, row in cache.iterrows()}
     new_entries = []
 
-    max_new = int(os.getenv("GEOCODE_MAX_NEW", "500") or "500")
+    max_new = _env_non_negative_int("GEOCODE_MAX_NEW", 500)
     new_candidates = [loc for loc in df["location_norm"].unique() if loc and loc not in known]
     if len(new_candidates) > max_new:
         print(f"Geocode limit hit: truncating from {len(new_candidates)} to {max_new} new locations")
@@ -65,7 +80,8 @@ def geocode_locations(df: pd.DataFrame, cache_path: Path | None = None) -> pd.Da
         new_entries.append({"location": loc, "lat": lat, "lon": lon})
 
     if new_entries:
-        cache = pd.concat([cache, pd.DataFrame(new_entries)], ignore_index=True)
+        new_rows = pd.DataFrame(new_entries)
+        cache = new_rows if cache.empty else pd.concat([cache, new_rows], ignore_index=True)
         cache.to_csv(cache_path, index=False)
 
     df["lat"] = df["location_norm"].map(lambda loc: known.get(loc, (None, None))[0])

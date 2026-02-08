@@ -29,3 +29,24 @@ def test_geocode_respects_max_new(monkeypatch, tmp_path):
 
     assert len(calls) == 3
     assert cache_path.exists()
+
+
+def test_geocode_invalid_max_new_falls_back_to_default(monkeypatch, tmp_path):
+    calls = []
+
+    class FakeLocator:
+        def geocode(self, loc):
+            calls.append(loc)
+            return SimpleNamespace(latitude=1.0, longitude=2.0)
+
+    monkeypatch.setenv("GEOCODE_MAX_NEW", "not-a-number")
+    monkeypatch.setattr(geocode, "Nominatim", lambda user_agent: FakeLocator())
+    monkeypatch.setattr(geocode, "RateLimiter", lambda func, **kwargs: func)
+
+    cache_path = tmp_path / "geocache.csv"
+    df = pd.DataFrame({"location": [f"Loc{i}" for i in range(6)]})
+
+    geocode.geocode_locations(df, cache_path=cache_path)
+
+    # Default remains 500, so all six rows are processed.
+    assert len(calls) == 6

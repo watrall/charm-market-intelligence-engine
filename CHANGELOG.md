@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-02-08 - Stability hardening (env/config parsing)
+### Stability
+- `scripts/geocode.py` no longer crashes when `GEOCODE_MAX_NEW` is non-numeric or negative; invalid values now fall back to the default.
+- `scripts/scrape_jobs.py` no longer crashes at import time when `SCRAPER_MAX_WORKERS` or `SCRAPER_REQUEST_INTERVAL` are invalid.
+- `reports/context.py` no longer crashes when `analysis.json` contains malformed `top_skills` entries.
+### Maintainability
+- Added focused env parsing helpers in `scripts/geocode.py` and `scripts/scrape_jobs.py` to centralize bounds checks and defaulting behavior.
+- Added `reports/context.py::_normalize_top_skills()` so all context builders consume a single normalized skill shape.
+- Adjusted geocode cache append path to avoid pandas concat-with-empty deprecation behavior.
+### Testing/Verification
+- Added regression coverage in `tests/test_geocode_limits.py` for invalid geocode env values.
+- Added new `tests/test_scrape_jobs_config.py` for scraper env fallback and bounds behavior.
+- Added new `tests/test_report_context_hardening.py` for malformed `top_skills` handling.
+### Notes / Deferred
+- No deferrals in this pass.
+
 ## 2026-02-08 - Security audit (pass 2)
 ### Security
 - Dockerfile now runs as non-root `appuser` (defense in depth).

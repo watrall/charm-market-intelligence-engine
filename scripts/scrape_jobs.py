@@ -13,8 +13,39 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-MAX_WORKERS = int(os.getenv("SCRAPER_MAX_WORKERS", "4"))
-REQUEST_INTERVAL = float(os.getenv("SCRAPER_REQUEST_INTERVAL", "0.8"))
+
+def _env_int(name: str, default: int, minimum: int | None = None) -> int:
+    raw = os.getenv(name)
+    if raw is None or not str(raw).strip():
+        return default
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        print(f"Warning: invalid {name}={raw!r}; using {default}")
+        return default
+    if minimum is not None and value < minimum:
+        print(f"Warning: {name}={raw!r} below minimum {minimum}; using {default}")
+        return default
+    return value
+
+
+def _env_float(name: str, default: float, minimum: float | None = None) -> float:
+    raw = os.getenv(name)
+    if raw is None or not str(raw).strip():
+        return default
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        print(f"Warning: invalid {name}={raw!r}; using {default}")
+        return default
+    if minimum is not None and value < minimum:
+        print(f"Warning: {name}={raw!r} below minimum {minimum}; using {default}")
+        return default
+    return value
+
+
+MAX_WORKERS = _env_int("SCRAPER_MAX_WORKERS", 4, minimum=1)
+REQUEST_INTERVAL = _env_float("SCRAPER_REQUEST_INTERVAL", 0.8, minimum=0.1)
 REFILL_RATE = MAX_WORKERS / max(REQUEST_INTERVAL, 0.1)
 _rate_lock = Lock()
 _thread_state = local()
