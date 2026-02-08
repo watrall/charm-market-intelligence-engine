@@ -26,7 +26,7 @@ def _authorize():
 
     scopes = [
         "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/spreadsheets",
     ]
     creds = Credentials.from_service_account_file(str(sa_path), scopes=scopes)
     client = gspread.authorize(creds)

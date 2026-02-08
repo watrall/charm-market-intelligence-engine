@@ -18,6 +18,7 @@ APP_ROOT = Path(__file__).resolve().parents[1]
 if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
 
+from dashboard.header import render_header  # noqa: E402
 from dashboard.pipeline_runner import (  # noqa: E402
     acquire_lock,
     allow_pipeline_run,
@@ -171,7 +172,7 @@ def configure_explore_page():
     """Set page config once when rendering the Explore surface."""
     if st.session_state.get("_page_configured"):
         return
-    st.set_page_config(page_title="CHARM Dashboard — Explore", layout="wide")
+    st.set_page_config(page_title="CHARM Dashboard: Explore", layout="wide")
     st.session_state["_page_configured"] = True
 
 
@@ -527,7 +528,7 @@ def _wizard_stepper(steps: list[str]) -> int:
 
     done_count = sum(1 for v in st.session_state["wizard_done"].values() if v)
     st.progress(done_count / len(steps))
-    st.caption(f"Step {st.session_state['wizard_step'] + 1} of {len(steps)} — complete each in order; you can revisit finished steps anytime.")
+    st.caption(f"Step {st.session_state['wizard_step'] + 1} of {len(steps)}. Complete each in order; you can revisit finished steps anytime.")
     return int(st.session_state["wizard_step"])
 
 
@@ -786,12 +787,13 @@ def _render_results_step(proc_dir: Path):
 
 def main():
     configure_explore_page()
-    st.title("CHARM Market Intelligence — Explore")
+    proc_dir = processed_dir()
+    render_header(proc_dir)
+    st.title("CHARM Market Intelligence: Explore")
     st.caption("Browse existing results. To ingest or re-run the pipeline, open Ingest & Analyze.")
     # Page paths are resolved relative to the main script directory (dashboard/)
     st.page_link("pages/01_Ingest_and_Analyze.py", label="Go to Ingest & Analyze", icon="➡️")
 
-    proc_dir = processed_dir()
     _render_results_step(proc_dir)
 
 

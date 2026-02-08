@@ -25,6 +25,11 @@
 | P1 | Dashboard pipeline run could grow unbounded output in memory | Fixed | Output capture capped and flagged when truncated (`dashboard/pipeline_runner.py`) |
 | P1 | OpenAI-compatible / HF inference URLs allowed non-http schemes | Fixed | Scheme/host validation added to block file/ftp SSRF vectors (`scripts/insights.py`) |
 | P2 | SQLite connection left open after pipeline completes | Fixed | `_persist_to_sqlite` now closes connections via `finally` |
+| P1 | `_save_processed_data` crashes when NLP disabled (no `skills` column) | Fixed | Guarded skills transform behind column existence check (`scripts/pipeline.py`) |
+| P1 | `upsert_jobs` / `upsert_reports` crash when optional columns missing | Fixed | Switched from `df[cols]` to `row.get(c)` iteration, returns `None` for absent columns (`scripts/db.py`) |
+| P1 | Report skills analysis silently corrupts data when skills are strings | Fixed | Used `_ensure_skill_lists()` instead of raw `.tolist()` to prevent character-level iteration (`scripts/analyze.py`) |
+| P2 | Pipeline output buffer truncation is O(n^2) due to `list.pop(0)` | Fixed | Replaced list with `collections.deque` and `popleft()` for O(1) removals (`dashboard/pipeline_runner.py`) |
+| P2 | Duplicate `_load_previous_jobs_csv` / `_load_previous_reports_csv` | Fixed | Merged into single `_load_previous_csv(proc_dir, name)` helper (`scripts/pipeline.py`) |
 
 ## Fixes Applied
 - Streamlit page config is now applied only once per session to prevent multipage crashes (dashboard/app.py).
@@ -37,10 +42,15 @@
 - Streamlit uploads now sanitize filenames and avoid overwrites to prevent traversal/overwrite (dashboard/app.py; tests/test_dashboard_uploads.py).
 - Pipeline output capture bounded with truncation flag to avoid memory blow-ups in UI runs (dashboard/pipeline_runner.py; tests/test_pipeline_runner_limits.py).
 - LLM provider URL validation blocks non-http schemes for OpenAI-compatible and HF inference backends (scripts/insights.py; tests/test_insights_security.py).
+- `_save_processed_data` now checks for `skills` column before transforming, preventing KeyError when NLP step is disabled (scripts/pipeline.py; tests/test_pipeline_save.py).
+- `upsert_jobs` and `upsert_reports` use `row.get(c)` instead of `df[cols]` indexing, returning NULL for columns not present in the DataFrame (scripts/db.py; tests/test_pipeline_save.py).
+- Report skills analysis now uses `_ensure_skill_lists()` to handle string-format skills, preventing `chain.from_iterable` from iterating characters instead of tokens (scripts/analyze.py; tests/test_pipeline_save.py).
+- Pipeline output buffer uses `collections.deque` with `popleft()` instead of `list.pop(0)` for O(1) removals during truncation (dashboard/pipeline_runner.py).
+- Duplicate `_load_previous_jobs_csv` / `_load_previous_reports_csv` consolidated into `_load_previous_csv(proc_dir, name)` (scripts/pipeline.py).
 
 ## How to Validate
 - Run `make test` for pytest suite.
 - Run `make lint` and `make typecheck` for static checks.
 - Run `make run-pipeline` (requires data/services) for end-to-end smoke.
 - Ensure the virtualenv uses Python 3.10+ (pyproject requirement); a 3.9 venv will fail to import due to `|` unions.
-- Targeted checks run during this audit: `pytest tests/test_dashboard_upload_limits.py tests/test_geocode_limits.py`.
+- Targeted checks run during this audit: `pytest tests/test_dashboard_upload_limits.py tests/test_geocode_limits.py tests/test_pipeline_save.py`.

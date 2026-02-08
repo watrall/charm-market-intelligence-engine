@@ -2,9 +2,10 @@ import streamlit as st
 
 # Reuse helpers and the guided flow from the main dashboard module
 from dashboard import app as explore_app
+from dashboard.header import render_header
 
 st.set_page_config(
-    page_title="CHARM — Ingest & Analyze",
+    page_title="CHARM: Ingest & Analyze",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -15,6 +16,8 @@ def main():
 
     mode = explore_app.app_mode()
     proc_dir = explore_app.processed_dir()
+
+    render_header(proc_dir)
 
     st.title("Ingest & Analyze")
     st.caption("Guided flow to ingest data and run the pipeline. Explore remains a separate surface.")

@@ -79,8 +79,8 @@ def upsert_jobs(conn, jobs_df: pd.DataFrame):
         "description", "sentiment", "lat", "lon", "salary_min", "salary_max", "currency"
     ]
     records = [
-        tuple(_clean_record(r[c]) for c in cols)
-        for _, r in jobs_df[cols].iterrows()
+        tuple(_clean_record(r.get(c)) for c in cols)
+        for _, r in jobs_df.iterrows()
     ]
     if records:
         conn.executemany(
@@ -136,7 +136,7 @@ def upsert_reports(conn, reports_df: pd.DataFrame):
     cols = ["report_name", "text", "word_count", "top_entities"]
     records = [
         tuple(_clean_record(r.get(c)) for c in cols)
-        for _, r in reports_df[cols].iterrows()
+        for _, r in reports_df.iterrows()
     ]
     if records:
         conn.executemany(

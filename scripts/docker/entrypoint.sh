@@ -12,5 +12,6 @@ if [ "$cmd" = "pipeline" ]; then
   exec python -u scripts/pipeline.py "$@"
 fi
 
-exec "$cmd" "$@"
+echo "Unknown command: $cmd (expected 'dashboard' or 'pipeline')" >&2
+exit 1
 

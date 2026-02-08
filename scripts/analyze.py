@@ -99,7 +99,7 @@ def analyze_market(jobs_df: pd.DataFrame, reports_df: pd.DataFrame | None) -> pd
                 out["cluster_error"] = str(exc)
 
     if reports_df is not None and not reports_df.empty and "skills" in reports_df.columns:
-        rep_sk = list(itertools.chain.from_iterable(reports_df["skills"].dropna().tolist()))
+        rep_sk = list(itertools.chain.from_iterable(_ensure_skill_lists(reports_df["skills"])))
         out["report_skills"] = Counter(rep_sk).most_common(30)
 
     return pd.Series(out)

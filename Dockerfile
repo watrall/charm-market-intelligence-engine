@@ -23,9 +23,15 @@ RUN python -c "import nltk; nltk.download('vader_lexicon', quiet=True)" 2>/dev/n
 
 COPY . /app
 
+RUN chmod +x /app/scripts/docker/entrypoint.sh
+
+# Run as non-root user for defense in depth
+RUN useradd --create-home --shell /bin/false appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 8501
 
-RUN chmod +x /app/scripts/docker/entrypoint.sh
 ENTRYPOINT ["/app/scripts/docker/entrypoint.sh"]
 CMD ["dashboard"]
 

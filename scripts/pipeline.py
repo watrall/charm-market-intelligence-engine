@@ -23,18 +23,8 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
-def _load_previous_jobs_csv(proc_dir: Path) -> pd.DataFrame:
-    fp = proc_dir / "jobs.csv"
-    if fp.exists():
-        try:
-            return pd.read_csv(fp)
-        except Exception:
-            return pd.DataFrame()
-    return pd.DataFrame()
-
-
-def _load_previous_reports_csv(proc_dir: Path) -> pd.DataFrame:
-    fp = proc_dir / "reports.csv"
+def _load_previous_csv(proc_dir: Path, name: str) -> pd.DataFrame:
+    fp = proc_dir / name
     if fp.exists():
         try:
             return pd.read_csv(fp)
@@ -106,7 +96,7 @@ def main():
                 "source", "title", "company", "location", "date_posted", "job_url", "description"
             ])
     else:
-        jobs_df = _load_previous_jobs_csv(proc)
+        jobs_df = _load_previous_csv(proc, "jobs.csv")
         if jobs_df is None or jobs_df.empty:
             print("Scrape disabled and no prior jobs.csv found; continuing with empty dataset.")
             jobs_df = pd.DataFrame(columns=[
@@ -117,7 +107,7 @@ def main():
     if do_reports:
         reports_df = parse_all_reports(base / "reports")
     else:
-        reports_df = _load_previous_reports_csv(proc)
+        reports_df = _load_previous_csv(proc, "reports.csv")
         if reports_df is None or reports_df.empty:
             reports_df = pd.DataFrame(columns=["report_name", "text"])
 
@@ -166,8 +156,9 @@ REPORTS_CSV_COLUMNS = [
 def _save_processed_data(jobs_df, reports_df, proc):
     """Save processed data to CSV with stable column ordering."""
     jobs_to_save = jobs_df.copy()
-    jobs_to_save["skills_list"] = jobs_to_save["skills"].apply(_skills_to_json)
-    jobs_to_save["skills"] = jobs_to_save["skills"].apply(_skills_to_string)
+    if "skills" in jobs_to_save.columns:
+        jobs_to_save["skills_list"] = jobs_to_save["skills"].apply(_skills_to_json)
+        jobs_to_save["skills"] = jobs_to_save["skills"].apply(_skills_to_string)
 
     # Ensure stable column order (only include columns that exist)
     job_cols = [c for c in JOBS_CSV_COLUMNS if c in jobs_to_save.columns]

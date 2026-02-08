@@ -43,3 +43,9 @@ build/
 # Logs
 *.log
 logs/
+
+# Generated audit docs
+docs/QUALITY_AUDIT.md
+docs/SECURITY_REPORT.md
+docs/SECURITY_CHANGES.md
+docs/SECURITY_VERIFICATION.md

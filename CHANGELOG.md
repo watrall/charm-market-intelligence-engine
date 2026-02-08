@@ -1,6 +1,30 @@
 # Changelog
 
-## 2026-02-02 — Stability hardening & guardrails
+## 2026-02-08 - Security audit (pass 2)
+### Security
+- Dockerfile now runs as non-root `appuser` (defense in depth).
+- CI `gitleaks` action pinned to `@v2.3.9` to prevent mutable tag supply-chain risk.
+- Google Sheets OAuth scope narrowed from full Drive to spreadsheets-only.
+- `_load_text_file` now validates filenames to prevent path traversal from corrupted cache.
+- Docker entrypoint rejects unknown commands instead of exec'ing them.
+- `LLM_MAX_TOKENS` parsing handles non-numeric values gracefully.
+### Testing
+- Added 8 security regression tests: path traversal prevention and safe env parsing.
+### Lint
+- Removed unused imports in `dashboard/header.py`, `tests/test_pipeline_save.py`, `tests/test_security_fixes.py`.
+
+## 2026-02-08 - Pipeline robustness audit
+### Stability
+- `_save_processed_data` no longer crashes when NLP is disabled and the `skills` column is absent.
+- `upsert_jobs` and `upsert_reports` no longer crash when optional enrichment columns (`sentiment`, `lat`, `lon`, `word_count`, `top_entities`) are missing from the DataFrame.
+- Report skills analysis now parses string-format skills correctly instead of iterating individual characters, preventing silent data corruption in `analysis.json`.
+### Maintainability
+- Pipeline output buffer uses `collections.deque` instead of `list` for O(1) front removals during truncation.
+- Consolidated duplicate `_load_previous_jobs_csv` / `_load_previous_reports_csv` into a single `_load_previous_csv` helper.
+### Testing
+- Added regression tests for CSV save without skills column, SQLite upsert with missing columns, and report skills string parsing.
+
+## 2026-02-02 - Stability hardening & guardrails
 ### Stability
 - Multipage Streamlit no longer crashes on import; page config is set only inside the Explore entrypoint.
 - Wizard uploads now enforce a 25 MB per-file cap to prevent disk exhaustion on hosted deploys.
@@ -31,7 +55,7 @@
 ### Notes / Deferred
 - None.
 
-## 2025-09-15 — Schema alignment & reliability
+## 2025-09-15 - Schema alignment & reliability
 - Added `config/.env.example` so Quick Start instructions work out of the box and documented defaults are real.
 - `jobs.csv` now includes the documented fields (`city`, `state`, `job_type`, `seniority`, canonical `url`, salary hints) via lightweight parsing/heuristics. `analysis.json` also contains `top_employers` plus a `run_timestamp`.
 - Reports parsing caches extracted text, records `word_count`/`top_entities`, and dedupes inserts in SQLite; unchanged PDFs no longer incur reprocessing.
@@ -39,7 +63,7 @@
 - Geocoding uses a configurable user agent with contact email to satisfy Nominatim terms, and Google Sheets tests now call supported helpers to verify credentials/worksheets.
 - SQLite inserts keep numeric fields as real `NULL`/float values, and report upserts are idempotent.
 
-## 2025-09-08 — Geospatial map updates
+## 2025-09-08 - Geospatial map updates
 - Added Folium map modes to visualize **skills × seniority × job type**:
   - **Points (clustered):** color by seniority, icon by job type, popup with title/org/skills and a link.
   - **Choropleth (by state):** shows posting intensity; works with or without a skill filter. Uses a local US states GeoJSON if present.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import PIPE, STDOUT, Popen
@@ -85,7 +86,7 @@ def run_pipeline(base: Path, env_overrides: dict[str, str] | None = None) -> Run
     cmd = [sys.executable, "-u", str(base / "scripts" / "pipeline.py")]
     proc = Popen(cmd, cwd=str(base), env=env, stdout=PIPE, stderr=STDOUT, text=True, bufsize=1)
 
-    buffer: list[str] = []
+    buffer: deque[str] = deque()
     total_len = 0
     truncated = False
     if proc.stdout:
@@ -96,7 +97,7 @@ def run_pipeline(base: Path, env_overrides: dict[str, str] | None = None) -> Run
                 # drop oldest lines to keep memory bounded
                 overflow = total_len - max_output_chars
                 while buffer and overflow > 0:
-                    removed = buffer.pop(0)
+                    removed = buffer.popleft()
                     overflow -= len(removed)
                     total_len -= len(removed)
                     truncated = True

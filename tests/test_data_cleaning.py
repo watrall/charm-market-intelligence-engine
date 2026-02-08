@@ -5,7 +5,6 @@ These tests verify that the cleaning and deduplication logic works correctly
 without requiring external services.
 """
 
-# Import the functions we're testing
 import json
 import sys
 from pathlib import Path

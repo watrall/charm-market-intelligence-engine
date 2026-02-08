@@ -41,3 +41,6 @@ scikit-learn==1.5.1
 
 # LLM (optional)
 openai==1.35.0
+
+# PDF report generation
+reportlab>=4.0

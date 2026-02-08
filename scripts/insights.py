@@ -49,7 +49,10 @@ def _llm_call(prompt: str) -> str:
 
     provider = os.getenv("LLM_PROVIDER", "").lower()
     model = os.getenv("LLM_MODEL", "gpt-4o-mini")
-    max_tokens = int(os.getenv("LLM_MAX_TOKENS", "1200"))
+    try:
+        max_tokens = int(os.getenv("LLM_MAX_TOKENS", "1200"))
+    except (TypeError, ValueError):
+        max_tokens = 1200
 
     try:
         if provider in {"openai", "openai_compat"} and os.getenv("OPENAI_API_KEY"):
@@ -163,7 +166,7 @@ def _render_prompt(analysis: dict, industry: str = "Cultural Resource & Heritage
         )
 
     top_skills = _normalize_top_skills(analysis.get("top_skills", []))
-    bullets = "\n".join([f"- {skill} — {count}" for skill, count in top_skills[:20]])
+    bullets = "\n".join([f"- {skill} - {count}" for skill, count in top_skills[:20]])
 
     replacements = {
         "{{INDUSTRY}}": industry,
@@ -196,7 +199,7 @@ def generate_insights(
         lines.append("- (no skill signals found)")
     else:
         for skill, count in top_skills[:20]:
-            lines.append(f"- {skill} — {count}")
+            lines.append(f"- {skill} - {count}")
     lines.append("")
 
     lines.append(_rules(top_skills))

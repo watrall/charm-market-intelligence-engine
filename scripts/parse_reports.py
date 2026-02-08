@@ -64,7 +64,12 @@ def _write_text_file(filename: str, text: str, checksum: str) -> str:
 def _load_text_file(filename: str | None) -> str | None:
     if not filename:
         return None
-    path = TEXT_DIR / filename
+    # Prevent path traversal from corrupted cache entries
+    if "/" in filename or "\\" in filename or filename.startswith("."):
+        return None
+    path = (TEXT_DIR / filename).resolve()
+    if not str(path).startswith(str(TEXT_DIR.resolve())):
+        return None
     if not path.exists():
         return None
     return path.read_text(encoding="utf-8")
